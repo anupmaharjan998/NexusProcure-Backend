@@ -1,0 +1,6 @@
+@NexusProcure.Api_HostAddress = http://localhost:5255
+
+GET {{NexusProcure.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
