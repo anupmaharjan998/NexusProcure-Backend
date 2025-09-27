@@ -1,0 +1,12 @@
+﻿namespace NexusProcure.Core.Entities;
+
+public class PurchaseOrderItem
+{
+    public Guid Id { get; set; }
+    public Guid PurchaseOrderId { get; set; }
+    public PurchaseOrder PurchaseOrder { get; set; }
+
+    public string ItemName { get; set; } = string.Empty;
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+}
