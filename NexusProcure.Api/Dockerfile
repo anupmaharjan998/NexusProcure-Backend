@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy all project files relative to the Api folder
-COPY *.csproj ./
+COPY NexusProcure.Api.csproj ./
 COPY ../NexusProcure.Application/*.csproj ../NexusProcure.Application/
 COPY ../NexusProcure.Core/*.csproj ../NexusProcure.Core/
 COPY ../NexusProcure.Infrastructure/*.csproj ../NexusProcure.Infrastructure/
