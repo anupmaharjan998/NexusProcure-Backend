@@ -55,9 +55,9 @@ public class NexusProcureDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict); 
         
         // Seed Roles
-        var adminRoleId = Guid.Parse("11111111-1111-1111-1111-111111111100");
-        var ceoRoleId = Guid.Parse("11111111-1111-1111-1111-111111111101");
-        var procurementRoleId = Guid.Parse("11111111-1111-1111-1111-111111111000");
+        var adminRoleId = Guid.Parse("c76abcb8-63b5-4e14-8428-3a9a9b7ad001");
+        var ceoRoleId = Guid.Parse("d27f6b43-9f64-4b13-a289-fd7744f2f102");
+        var procurementRoleId = Guid.Parse("b38b2e23-6a7e-4c6d-9d5e-437a78c7b203");
 
         modelBuilder.Entity<Role>().HasData(
             new Role { Id = adminRoleId, Name = "Admin" },
@@ -69,10 +69,10 @@ public class NexusProcureDbContext : DbContext
         modelBuilder.Entity<User>().HasData(
             new User
             {
-                Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                Id = Guid.Parse("a87f3d2b-0f0d-4b4e-9d2a-4e09d68f4104"),
                 Username = "admin",
                 Email = "admin@nexusprocure.com",
-                PasswordHash = "$2a$11$y9F3ZBoHxlzE7x9/.R7KQ.9XasZDfWPGhKpD3gLE2/J6ZfCqzDq6a", // Admin@123
+                PasswordHash = "AQAAAAIAAYagAAAAEHsHTY55ymmyC5FW7c6RpK2s/HWufLsNpUswO1iSjCFPadhi/WF+HZo86Twk4Rl4NQ==", // Admin@123
                 RoleId = adminRoleId
             }
         );
