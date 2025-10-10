@@ -23,8 +23,4 @@
       <ProjectReference Include="..\NexusProcure.Infrastructure\NexusProcure.Infrastructure.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Controllers\" />
-    </ItemGroup>
-
 </Project>

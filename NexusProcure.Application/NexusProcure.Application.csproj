@@ -8,11 +8,12 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NexusProcure.Core\NexusProcure.Core.csproj" />
+      <ProjectReference Include="..\NexusProcure.Infrastructure\NexusProcure.Infrastructure.csproj" />
+      <ProjectReference Include="..\NexusProcure.Shared\NexusProcure.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Interfaces\" />
-      <Folder Include="Services\" />
+      <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.1" />
     </ItemGroup>
 
 </Project>

@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Services;
 using NexusProcure.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers(); // ✅ Required for MapControllers()
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -12,6 +15,12 @@ builder.Services.AddDbContext<NexusProcureDbContext>(opt =>
 {
     opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+// ✅ Add Authentication & Authorization services
+builder.Services.AddAuthentication();
+builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
@@ -23,5 +32,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// ✅ Make sure authentication comes before authorization
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
