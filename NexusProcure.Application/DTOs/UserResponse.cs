@@ -1,10 +1,9 @@
-﻿namespace NexusProcure.Application.DTOs;
+﻿using NexusProcure.Core.Entities;
+
+namespace NexusProcure.Application.DTOs;
 
 public class UserResponse
 {
-    public Guid Id { get; set; }
-    public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
+    public User User { get; set; }
     public string Token { get; set; } = string.Empty;
 }
