@@ -34,7 +34,13 @@ public class AuthService : IAuthService
 
         return new UserResponse
         {
-            User = user,
+            User = new UserDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                Role = user.Role.Name
+            },
             Token = token
         };
     }
