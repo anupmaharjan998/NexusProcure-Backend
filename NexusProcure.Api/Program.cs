@@ -19,6 +19,18 @@ builder.Services.AddDbContext<NexusProcureDbContext>(opt =>
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
+// Enable CORS (allow all origins, headers, and methods)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
