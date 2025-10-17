@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NexusProcure.Application;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Services;
 using NexusProcure.Infrastructure.Data;
@@ -7,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -32,6 +35,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
