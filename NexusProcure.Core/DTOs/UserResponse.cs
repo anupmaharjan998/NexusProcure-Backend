@@ -1,6 +1,4 @@
-﻿using NexusProcure.Core.Entities;
-
-namespace NexusProcure.Application.DTOs;
+﻿namespace NexusProcure.Core.DTOs;
 
 public class UserResponse
 {

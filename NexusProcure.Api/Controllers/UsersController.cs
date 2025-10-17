@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using NexusProcure.Application.DTOs;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Core.DTOs;
 
 namespace NexusProcure.Api.Controllers;
 

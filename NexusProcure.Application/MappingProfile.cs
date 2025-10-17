@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using NexusProcure.Application.DTOs;
+using NexusProcure.Core.DTOs;
 using NexusProcure.Core.Entities;
 
 namespace NexusProcure.Application;
@@ -17,11 +17,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // handled manually
 
         // // Role
-        // CreateMap<Role, RoleDto>()
-        //     .ForMember(dest => dest.Permissions, opt => opt.MapFrom(src => src.RolePermissions.Select(rp => rp.Permission.Name)));
-        //
-        // CreateMap<CreateRoleDto, Role>();
-        //
+        CreateMap<Role, RoleDto>()
+            .ForMember(dest => dest.Permissions, opt => opt.MapFrom(src => src.RolePermissions.Select(rp => rp.Permission)));
+        
+        CreateMap<CreateRoleDto, Role>();
+        
         // // Department
         // CreateMap<Department, DepartmentDto>()
         //     .ForMember(dest => dest.HeadName, opt => opt.MapFrom(src => src.Head != null ? src.Head.Username : null));
