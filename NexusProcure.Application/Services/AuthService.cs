@@ -34,7 +34,7 @@ public class AuthService : IAuthService
 
         return new UserResponse
         {
-            User = new UserDto
+            User = new UserResponseDto
             {
                 Id = user.Id,
                 FullName = user.FullName,
