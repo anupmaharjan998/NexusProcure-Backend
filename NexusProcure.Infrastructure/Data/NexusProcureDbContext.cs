@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NexusProcure.Core.Entities;
+using NexusProcure.Infrastructure.Data.Seeds;
 
 namespace NexusProcure.Infrastructure.Data;
 
@@ -25,6 +26,9 @@ public class NexusProcureDbContext : DbContext
     public DbSet<InventoryItem> InventoryItems { get; set; }
     public DbSet<AssetAssignment> AssetAssignments { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,5 +80,23 @@ public class NexusProcureDbContext : DbContext
                 RoleId = adminRoleId
             }
         );
+        
+        // Composite key for RolePermission
+        modelBuilder.Entity<RolePermission>()
+            .HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+        // Relationships
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(rp => rp.Role)
+            .WithMany(r => r.RolePermissions)
+            .HasForeignKey(rp => rp.RoleId);
+
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(rp => rp.Permission)
+            .WithMany(p => p.RolePermissions)
+            .HasForeignKey(rp => rp.PermissionId);
+        
+        
+        PermissionSeed.Seed(modelBuilder);
     }
 }

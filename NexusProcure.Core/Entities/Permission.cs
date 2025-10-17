@@ -1,11 +1,10 @@
 ﻿namespace NexusProcure.Core.Entities;
 
-public class Role
+public class Permission
 {
     public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty; 
-  
-    // Navigation
-    public ICollection<User> Users { get; set; } = new List<User>();
+    public string Key { get; set; } = string.Empty; // e.g. "VIEW_USERS"
+    public string Description { get; set; } = string.Empty;
+
     public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 }
