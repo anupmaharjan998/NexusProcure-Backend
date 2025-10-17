@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using NexusProcure.Application.DTOs;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Infrastructure.Data;
 using NexusProcure.Shared.Helper;
 using Microsoft.AspNetCore.Identity;
+using NexusProcure.Core.DTOs;
 using NexusProcure.Core.Entities;
 
 namespace NexusProcure.Application.Services;

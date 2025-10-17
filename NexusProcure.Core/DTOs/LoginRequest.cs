@@ -1,4 +1,4 @@
-﻿namespace NexusProcure.Application.DTOs;
+﻿namespace NexusProcure.Core.DTOs;
 
 public class LoginRequest
 {

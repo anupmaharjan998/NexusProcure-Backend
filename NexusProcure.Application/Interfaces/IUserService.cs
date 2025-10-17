@@ -1,4 +1,4 @@
-﻿using NexusProcure.Application.DTOs;
+﻿using NexusProcure.Core.DTOs;
 
 namespace NexusProcure.Application.Interfaces;
 

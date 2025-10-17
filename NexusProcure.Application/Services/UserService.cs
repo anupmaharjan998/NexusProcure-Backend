@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using NexusProcure.Application.DTOs;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Core.DTOs;
 using NexusProcure.Core.Entities;
 using NexusProcure.Infrastructure.Data;
 
