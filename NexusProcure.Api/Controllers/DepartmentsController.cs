@@ -4,7 +4,7 @@ using NexusProcure.Core.DTOs;
 
 namespace NexusProcure.Api.Controllers;
 
-public class DepartmentsController : Controller
+public class DepartmentsController : BaseApiController
 {
     private readonly IDepartmentService _departmentService;
 
