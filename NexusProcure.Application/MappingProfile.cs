@@ -10,7 +10,7 @@ public class MappingProfile : Profile
     {
         // User
         CreateMap<User, UserDto>()
-            .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role != null ? src.Role.Name : null))
+            .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
             .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department != null ? src.Department.DepartmentName : null));
 
         CreateMap<CreateUserDto, User>()
@@ -23,12 +23,13 @@ public class MappingProfile : Profile
         CreateMap<CreateRoleDto, Role>();
         
         // // Department
-        // CreateMap<Department, DepartmentDto>()
-        //     .ForMember(dest => dest.HeadName, opt => opt.MapFrom(src => src.Head != null ? src.Head.Username : null));
-        //
-        // CreateMap<CreateDepartmentDto, Department>();
+        CreateMap<Department, DepartmentDto>()
+            .ForMember(dest => dest.HeadName, opt => opt.MapFrom(src => src.Head != null ? src.Head.Username : null))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DepartmentName));
+        
+        CreateMap<CreateDepartmentDto, Department>();
         //
         // // Permission
-        // CreateMap<Permission, PermissionDto>();
+        CreateMap<Permission, PermissionDto>();
     }
 }
