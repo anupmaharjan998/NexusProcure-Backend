@@ -25,7 +25,8 @@ public class MappingProfile : Profile
         // // Department
         CreateMap<Department, DepartmentDto>()
             .ForMember(dest => dest.HeadName, opt => opt.MapFrom(src => src.Head != null ? src.Head.Username : null))
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DepartmentName));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DepartmentName))
+            .ForMember(dest => dest.EmployeesCount, opt => opt.MapFrom(src => src.Users != null ? src.Users.Count : 0));
         
         CreateMap<CreateDepartmentDto, Department>();
         //

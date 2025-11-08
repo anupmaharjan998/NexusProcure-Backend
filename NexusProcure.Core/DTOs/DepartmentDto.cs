@@ -5,6 +5,7 @@ public class DepartmentDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? HeadName { get; set; }
+    public int EmployeesCount { get; set; }
 }
 
 public class CreateDepartmentDto

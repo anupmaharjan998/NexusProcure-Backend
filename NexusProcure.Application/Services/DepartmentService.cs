@@ -36,7 +36,7 @@ public class DepartmentService : IDepartmentService
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             return department == null ? null : _mapper.Map<DepartmentDto>(department);
-        }
+        } 
 
         public async Task<DepartmentDto> CreateAsync(CreateDepartmentDto dto)
         {
