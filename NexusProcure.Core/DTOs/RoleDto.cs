@@ -1,4 +1,6 @@
-﻿namespace NexusProcure.Core.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace NexusProcure.Core.DTOs;
 
 public class RoleDto
 {
@@ -9,6 +11,7 @@ public class RoleDto
 
 public class CreateRoleDto
 {
+    [Required(ErrorMessage = "Role name is required.")]
     public string Name { get; set; } = string.Empty;
 }
 
