@@ -47,6 +47,12 @@ public class RoleService : IRoleService
         var role = await _context.Roles.FindAsync(id);
         if (role == null) return null;
 
+        // Admin role cannot be modified
+        if (string.Equals(role.Name, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         role.Name = dto.Name;
         await _context.SaveChangesAsync();
 
@@ -57,6 +63,12 @@ public class RoleService : IRoleService
     {
         var role = await _context.Roles.FindAsync(id);
         if (role == null) return false;
+
+        // Admin role cannot be deleted
+        if (string.Equals(role.Name, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
 
         _context.Roles.Remove(role);
         await _context.SaveChangesAsync();
