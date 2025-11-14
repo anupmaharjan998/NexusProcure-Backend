@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+﻿using System.Net;
+using System.Security.Cryptography;
+using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
@@ -12,11 +14,13 @@ public class UserService : IUserService
 {
     private readonly NexusProcureDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IEmailService _emailService;
 
-    public UserService(NexusProcureDbContext context, IMapper mapper)
+    public UserService(NexusProcureDbContext context, IMapper mapper, IEmailService emailService)
     {
         _context = context;
         _mapper = mapper;
+        _emailService = emailService;
     }
 
     public async Task<IEnumerable<UserDto>> GetAllAsync()
@@ -41,11 +45,35 @@ public class UserService : IUserService
 
     public async Task<UserDto> CreateAsync(CreateUserDto dto)
     {
+        var incomingEmail = (dto.Email ?? string.Empty).Trim();
+        if (await _context.Users.AsNoTracking().AnyAsync(u => u.Email.ToLower() == incomingEmail.ToLower()))
+        {
+            throw new InvalidOperationException("A user with the provided email already exists.");
+        }
+
         var user = _mapper.Map<User>(dto);
-        user.PasswordHash = new PasswordHasher<User>().HashPassword(user, dto.Password);
+        
+        var generatedPassword = GenerateSecurePassword();
+        user.PasswordHash = new PasswordHasher<User>().HashPassword(user, generatedPassword);
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+        
+        var subject = "Your NexusProcure account details";
+        var body = $"<p>Hi {WebUtility.HtmlEncode(user.FullName)},</p>" +
+                   $"<p>Your account has been created.</p>" +
+                   $"<p><strong>Username:</strong> {WebUtility.HtmlEncode(user.Username)}<br/>" +
+                   $"<strong>Email:</strong> {WebUtility.HtmlEncode(user.Email)}<br/>" +
+                   $"<strong>Temporary Password:</strong> {WebUtility.HtmlEncode(generatedPassword)}</p>" +
+                   "<p>For security, please sign in and change your password immediately.</p>";
+        try
+        {
+            await _emailService.SendAsync(user.Email, subject, body);
+        }
+        catch
+        {
+            //ToDo : Email Failed Message
+        }
 
         return _mapper.Map<UserDto>(user);
     }
@@ -72,5 +100,36 @@ public class UserService : IUserService
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    private static string GenerateSecurePassword(int length = 12)
+    {
+        // Generate a password with letters, digits, and symbols ensuring complexity
+        const string upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const string lower = "abcdefghijkmnopqrstuvwxyz";
+        const string digits = "23456789";
+        const string symbols = "!@$%^&*?-_";
+        var all = upper + lower + digits + symbols;
+
+        var result = new char[length];
+
+        // Ensure at least one from each category
+        result[0] = upper[RandomNumberGenerator.GetInt32(upper.Length)];
+        result[1] = lower[RandomNumberGenerator.GetInt32(lower.Length)];
+        result[2] = digits[RandomNumberGenerator.GetInt32(digits.Length)];
+        result[3] = symbols[RandomNumberGenerator.GetInt32(symbols.Length)];
+
+        for (int i = 4; i < length; i++)
+        {
+            result[i] = all[RandomNumberGenerator.GetInt32(all.Length)];
+        }
+        
+        for (int i = result.Length - 1; i > 0; i--)
+        {
+            int j = RandomNumberGenerator.GetInt32(i + 1);
+            (result[i], result[j]) = (result[j], result[i]);
+        }
+
+        return new string(result);
     }
 }

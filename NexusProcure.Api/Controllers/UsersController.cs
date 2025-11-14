@@ -26,8 +26,15 @@ public class UsersController : BaseApiController
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserDto dto)
     {
-        var newUser = await _userService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = newUser.Id }, newUser);
+        try
+        {
+            var newUser = await _userService.CreateAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = newUser.Id }, newUser);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]
