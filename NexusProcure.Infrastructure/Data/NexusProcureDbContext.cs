@@ -81,11 +81,11 @@ public class NexusProcureDbContext : DbContext
             }
         );
         
-        // Composite key for RolePermission
+        
         modelBuilder.Entity<RolePermission>()
             .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
-        // Relationships
+        
         modelBuilder.Entity<RolePermission>()
             .HasOne(rp => rp.Role)
             .WithMany(r => r.RolePermissions)

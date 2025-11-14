@@ -35,12 +35,18 @@ namespace NexusProcure.Application.Services;
             var role = await _context.Roles.FindAsync(roleId);
             if (role == null) return false;
 
+            // If Admin, enforce all permissions and ignore requested changes
+            if (string.Equals(role.Name, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                permissionIds = await _context.Permissions.Select(p => p.Id).ToListAsync();
+            }
+
             // Remove old permissions
             var existing = _context.RolePermissions.Where(rp => rp.RoleId == roleId);
             _context.RolePermissions.RemoveRange(existing);
 
             // Add new ones
-            var newPermissions = permissionIds.Select(pid => new RolePermission
+            var newPermissions = permissionIds.Distinct().Select(pid => new RolePermission
             {
                 RoleId = roleId,
                 PermissionId = pid
