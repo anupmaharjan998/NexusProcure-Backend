@@ -1,4 +1,6 @@
-﻿namespace NexusProcure.Core.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace NexusProcure.Core.DTOs;
 
 public class DepartmentDto
 {
@@ -10,6 +12,7 @@ public class DepartmentDto
 
 public class CreateDepartmentDto
 {
+    [Required(ErrorMessage = "Please enter department name.")]
     public string Name { get; set; } = string.Empty;
     public Guid? HeadId { get; set; }
 }
