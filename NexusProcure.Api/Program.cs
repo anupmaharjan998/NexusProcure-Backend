@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Models;
 using NexusProcure.Application.Services;
 using NexusProcure.Infrastructure.Data;
 
@@ -40,6 +41,10 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
 var app = builder.Build();
 
