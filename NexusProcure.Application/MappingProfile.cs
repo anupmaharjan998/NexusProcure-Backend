@@ -31,6 +31,7 @@ public class MappingProfile : Profile
         CreateMap<CreateDepartmentDto, Department>();
         //
         // // Permission
-        CreateMap<Permission, PermissionDto>();
+        CreateMap<Permission, PermissionDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Description));
     }
 }
