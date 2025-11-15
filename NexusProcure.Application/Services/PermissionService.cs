@@ -60,7 +60,11 @@ namespace NexusProcure.Application.Services;
         
         public async Task<IEnumerable<PermissionDto>> GetByRoleIdAsync(Guid roleId)
         {
-            var permissions = await _context.RolePermissions.Where(x=>x.Role.Id == roleId).ToListAsync();
+            var permissions = await _context.RolePermissions
+                .Where(rp => rp.RoleId == roleId)
+                .Include(rp => rp.Permission)
+                .Select(rp => rp.Permission)
+                .ToListAsync();
             return _mapper.Map<IEnumerable<PermissionDto>>(permissions);
         }
     }

@@ -31,6 +31,6 @@ public class PermissionsController : BaseApiController
     }
 
 
-    [HttpGet("{roleId}")]
+    [HttpGet("role-permissions/{roleId}")]
     public async Task<IActionResult> GetByRoleId(Guid roleId) => Ok(await _permissionService.GetByRoleIdAsync(roleId));
 }
