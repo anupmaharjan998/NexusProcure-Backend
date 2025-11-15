@@ -51,7 +51,7 @@ public class DepartmentService : IDepartmentService
             var department = await _context.Departments.FindAsync(id);
             if (department == null) return null;
 
-            department.DepartmentName = dto.Name ?? department.DepartmentName;
+            department.DepartmentName = dto.DepartmentName ?? department.DepartmentName;
             if (dto.HeadId.HasValue) department.HeadId = dto.HeadId;
             await _context.SaveChangesAsync();
 
