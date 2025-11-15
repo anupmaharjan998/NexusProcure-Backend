@@ -10,4 +10,8 @@ public interface IPermissionService
     Task<bool> AssignPermissionsToRole(Guid roleId, List<Guid> permissionIds);
 
     Task<IEnumerable<PermissionDto>> GetByRoleIdAsync(Guid roleId);
+
+    Task<List<string>> GetPermissionsForUserAsync(Guid userId);
+    
+    Task<bool> PermissionExistsAsync(string permissionName);
 }

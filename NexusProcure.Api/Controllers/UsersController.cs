@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs;
 
@@ -14,6 +15,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "VIEW_USERS")]
     public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
 
     [HttpGet("{id}")]
