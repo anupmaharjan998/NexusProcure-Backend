@@ -29,4 +29,8 @@ public class PermissionsController : BaseApiController
         var success = await _permissionService.AssignPermissionsToRole(roleId, permissionIds);
         return success ? Ok("Permissions updated") : NotFound("Role not found");
     }
+
+
+    [HttpGet("role-permissions/{roleId}")]
+    public async Task<IActionResult> GetByRoleId(Guid roleId) => Ok(await _permissionService.GetByRoleIdAsync(roleId));
 }
