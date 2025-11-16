@@ -26,7 +26,6 @@ public class AuthController : BaseApiController
         return Ok(result);
     }
 
-    [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
