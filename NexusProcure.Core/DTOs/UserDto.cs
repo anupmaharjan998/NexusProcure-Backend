@@ -39,6 +39,7 @@ public class CreateUserDto
 
 public class UpdateUserDto
 {
+    public string FullName { get; set; }
     [EmailAddress]
     public string? Email { get; set; }
     public Guid? RoleId { get; set; }
