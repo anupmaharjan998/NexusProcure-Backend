@@ -34,7 +34,10 @@ public class AuthService : IAuthService
             return null;
 
         var token = JwtTokenGenerator.GenerateToken(user, _config["Jwt:Key"]!);
-
+        
+        var permissions = await  _context.RolePermissions.Where(x=>x.RoleId == user.RoleId)
+            .Include(p=>p.Permission)
+            .Select(l=> l.Permission.Key).ToListAsync();
         return new UserResponse
         {
             User = new UserResponseDto
@@ -44,7 +47,8 @@ public class AuthService : IAuthService
                 Email = user.Email,
                 Role = user.Role.Name
             },
-            Token = token
+            Token = token,
+            Permissions = permissions
         };
     }
 

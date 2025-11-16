@@ -4,6 +4,8 @@ public class UserResponse
 {
     public UserResponseDto User { get; set; }
     public string Token { get; set; } = string.Empty;
+
+    public List<string> Permissions { get; set; }
 }
 
 
