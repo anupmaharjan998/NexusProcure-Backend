@@ -28,7 +28,9 @@ public class AuthService : IAuthService
 
         if (user == null)
             return null;
-
+        if(!user.IsActive)
+            return null;
+            
         var passwordVerificationResult = new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
             return null;
