@@ -26,12 +26,10 @@ public class AuthController : BaseApiController
         return Ok(result);
     }
 
-    [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        if (request == null ||
-            string.IsNullOrWhiteSpace(request.CurrentPassword) ||
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
             string.IsNullOrWhiteSpace(request.NewPassword) ||
             string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
         {
@@ -50,10 +48,7 @@ public class AuthController : BaseApiController
             return BadRequest(new { message = "New password and confirmation do not match" });
         }
 
-        
-        request.Email = email;
-
-        var success = await _authService.ChangePasswordAsync(request);
+        var success = await _authService.ChangePasswordAsync(email, request);
         if (!success)
         {
             // For security, avoid revealing whether email exists or password mismatch

@@ -28,13 +28,18 @@ public class AuthService : IAuthService
 
         if (user == null)
             return null;
-
+        if(!user.IsActive)
+            return null;
+            
         var passwordVerificationResult = new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
             return null;
 
         var token = JwtTokenGenerator.GenerateToken(user, _config["Jwt:Key"]!);
-
+        
+        var permissions = await  _context.RolePermissions.Where(x=>x.RoleId == user.RoleId)
+            .Include(p=>p.Permission)
+            .Select(l=> l.Permission.Key).ToListAsync();
         return new UserResponse
         {
             User = new UserResponseDto
@@ -44,13 +49,14 @@ public class AuthService : IAuthService
                 Email = user.Email,
                 Role = user.Role.Name
             },
-            Token = token
+            Token = token,
+            Permissions = permissions
         };
     }
 
-    public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
+    public async Task<bool> ChangePasswordAsync(string email, ChangePasswordRequest request)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null) return false;
 
         
