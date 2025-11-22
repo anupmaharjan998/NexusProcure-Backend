@@ -1,9 +1,10 @@
-﻿using System.Net;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using AutoMapper;
+using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.Entities;
 using NexusProcure.Infrastructure.Data;
@@ -59,21 +60,14 @@ public class UserService : IUserService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
         
-        var subject = "Your NexusProcure account details";
-        var body = $"<p>Hi {WebUtility.HtmlEncode(user.FullName)},</p>" +
-                   $"<p>Your account has been created.</p>" +
-                   $"<p><strong>Username:</strong> {WebUtility.HtmlEncode(user.Username)}<br/>" +
-                   $"<strong>Email:</strong> {WebUtility.HtmlEncode(user.Email)}<br/>" +
-                   $"<strong>Temporary Password:</strong> {WebUtility.HtmlEncode(generatedPassword)}</p>" +
-                   "<p>For security, please sign in and change your password immediately.</p>";
-        try
-        {
-            await _emailService.SendAsync(user.Email, subject, body);
-        }
-        catch
-        {
-            //ToDo : Email Failed Message
-        }
+        BackgroundJob.Enqueue<IEmailJobService>(job =>
+            job.SendUserCreatedEmailAsync(
+                user.Email,
+                user.FullName,
+                user.Username,
+                generatedPassword
+            )
+        );
 
         return _mapper.Map<UserDto>(user);
     }
