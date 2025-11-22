@@ -100,6 +100,14 @@ public class AuthService : IAuthService
         // Queue email with Hangfire
         BackgroundJob.Enqueue<IEmailJobService>(job => job.SendUserPasswordResetTokenEmailAsync(user.Email, user.FullName, user.PasswordResetToken));
     }
+    
+    public async Task<bool> RequestVerifyTokenAsync(string token)
+    {
+        return await _context.Users
+            .AnyAsync(u => u.PasswordResetToken == token
+                                      && !u.PasswordResetTokenUsed
+                                      && u.PasswordResetTokenExpiration > DateTime.UtcNow);
+    }
 
     public async Task ResetPasswordAsync(ResetPasswordRequestDto dto)
     {
