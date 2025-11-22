@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs;
 
@@ -24,6 +25,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "CREATE_USER")]
     public async Task<IActionResult> Create(CreateUserDto dto)
     {
         try
@@ -38,6 +40,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "EDIT_USER")]
     public async Task<IActionResult> Update(Guid id, UpdateUserDto dto)
     {
         var updated = await _userService.UpdateAsync(id, dto);
@@ -45,6 +48,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "DELETE_USER")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _userService.DeleteAsync(id);

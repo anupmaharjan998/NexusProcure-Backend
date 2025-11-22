@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs;
 
@@ -24,6 +25,7 @@ public class RolesController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "CREATE_ROLE")]
     public async Task<IActionResult> Create(CreateRoleDto dto)
     {
         var role = await _roleService.CreateAsync(dto);
@@ -31,6 +33,7 @@ public class RolesController : BaseApiController
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "EDIT_ROLE")]
     public async Task<IActionResult> Update(Guid id, UpdateRoleDto dto)
     {
         var updated = await _roleService.UpdateAsync(id, dto);
@@ -38,6 +41,7 @@ public class RolesController : BaseApiController
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "DELETE_ROLE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _roleService.DeleteAsync(id);
