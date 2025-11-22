@@ -16,7 +16,7 @@ public class User : BaseEntity
     public Guid? DepartmentId { get; set; }
     public Department? Department { get; set; }
     
-    public string? PasswordResetToken { get; set; }
+    public Guid? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }
     public bool PasswordResetTokenUsed { get; set; } = false;
 

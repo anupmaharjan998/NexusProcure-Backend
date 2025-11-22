@@ -1,14 +1,13 @@
-﻿using System.Net;
-using Hangfire;
+﻿using Hangfire;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NexusProcure.Application.Interfaces;
-using NexusProcure.Infrastructure.Data;
-using NexusProcure.Shared.Helper;
-using Microsoft.AspNetCore.Identity;
 using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.Entities;
+using NexusProcure.Infrastructure.Data;
+using NexusProcure.Shared.Helper;
 
 namespace NexusProcure.Application.Services;
 
@@ -90,23 +89,16 @@ public class AuthService : IAuthService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == dto.Email.ToLower() && u.IsActive);
         if (user == null)
             return; // Don't reveal if user exists
-        user.PasswordResetToken = TokenGenerator.GenerateToken();
+        user.PasswordResetToken = Guid.NewGuid();
         user.PasswordResetTokenExpiration = DateTime.UtcNow.AddHours(1);
         user.PasswordResetTokenUsed = false;
 
         await _context.SaveChangesAsync();
-
+        
+        var resetLink = $"{_config["Jwt:Key"]!}/reset-password/{user.PasswordResetToken}";
         
         // Queue email with Hangfire
-        BackgroundJob.Enqueue<IEmailJobService>(job => job.SendUserPasswordResetTokenEmailAsync(user.Email, user.FullName, user.PasswordResetToken));
-    }
-    
-    public async Task<bool> RequestVerifyTokenAsync(string token)
-    {
-        return await _context.Users
-            .AnyAsync(u => u.PasswordResetToken == token
-                                      && !u.PasswordResetTokenUsed
-                                      && u.PasswordResetTokenExpiration > DateTime.UtcNow);
+        BackgroundJob.Enqueue<IEmailJobService>(job => job.SendUserPasswordResetTokenEmailAsync(user.Email, user.FullName, resetLink));
     }
 
     public async Task ResetPasswordAsync(ResetPasswordRequestDto dto)

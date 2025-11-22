@@ -64,17 +64,6 @@ public class AuthController : BaseApiController
         return Ok(new { Message = "If this email exists, a password reset token has been sent." });
     }
 
-    [HttpGet("verify-token")]
-    public async Task<IActionResult> VerifyToken(string token)
-    {
-        var valid = await _authService.RequestVerifyTokenAsync(token);
-        if (!valid)
-        {
-            return Unauthorized(new { message = "Invalid token." });
-        }
-
-        return Ok(new { message = "Valid token." });
-    }
     
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto dto)

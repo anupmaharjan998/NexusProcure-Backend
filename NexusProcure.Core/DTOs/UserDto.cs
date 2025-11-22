@@ -56,7 +56,7 @@ public class ForgotPasswordRequestDto
 public class ResetPasswordRequestDto
 {
     [Required]
-    public string Token { get; set; }
+    public Guid Token { get; set; }
     [Required]
     public string NewPassword { get; set; } = string.Empty;
 }
