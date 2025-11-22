@@ -1,12 +1,19 @@
+using System.Text;
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using NexusProcure.Api.hangfire;
 using NexusProcure.Application;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Models;
 using NexusProcure.Application.Services;
+using NexusProcure.Application.Services.BackgroundJobs;
 using NexusProcure.Infrastructure.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,29 +27,29 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "NexusProcure API", Version = "v1" });
 
-    // ✅ Add JWT Authorization support in Swagger
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    // JWT in Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your valid JWT token.\n\nExample: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer' [space] and then your valid JWT token."
     });
 
-    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            new string[] { }
         }
     });
 });
@@ -53,7 +60,7 @@ builder.Services.AddDbContext<NexusProcureDbContext>(opt =>
     opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-// Authentication & Authorization (JWT Bearer)
+// JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"];
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!));
 
@@ -77,18 +84,19 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// Enable CORS (allow all origins, headers, and methods)
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         policy =>
         {
             policy.AllowAnyOrigin()
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
+                .AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 
+// Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -96,13 +104,48 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
-
+// Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 
+
+// ✅---------------------- HANGFIRE CONFIG ----------------------
+
+// Register background email job service
+builder.Services.AddScoped<IEmailJobService, EmailJobService>();
+builder.Services.AddScoped<HangfireJobLoggingFilter>();
+
+// Register Hangfire with PostgreSQL storage
+builder.Services.AddHangfire(config =>
+{
+    config.UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+
+// Start Hangfire server
+builder.Services.AddHangfireServer();
+
+
+
+
+
+// ---------------------------------------------------------------
+
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new IDashboardAuthorizationFilter[]
+    {
+        new HangfireBasicAuthFilter("admin", "Admin@123")
+    }
+});
+
+
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
