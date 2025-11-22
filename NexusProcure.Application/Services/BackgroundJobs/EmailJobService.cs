@@ -27,4 +27,15 @@ public class EmailJobService : IEmailJobService
 
         await _emailService.SendAsync(email, subject, body);
     }
+    public async Task SendUserPasswordResetTokenEmailAsync(string email, string fullName, string resetToken)
+    {
+        var subject = "Password Reset Request";
+        var body = $"<p>Hi {WebUtility.HtmlEncode(fullName)},</p>" +
+                   $"<p>Use the following token to reset your password. The token is valid for 1 hour:</p>" +
+                   $"<p><strong>{resetToken}</strong></p>" +
+                   "<p>Enter this token in the reset password form to change your password.</p>";
+
+
+        await _emailService.SendAsync(email, subject, body);
+    }
 }

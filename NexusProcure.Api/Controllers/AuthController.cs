@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 
 namespace NexusProcure.Api.Controllers;
 
@@ -57,4 +56,19 @@ public class AuthController : BaseApiController
 
         return Ok(new { message = "Password changed successfully" });
     }
+    
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto dto)
+    {
+        await _authService.RequestPasswordResetAsync(dto);
+        return Ok(new { Message = "If this email exists, a password reset token has been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto dto)
+    {
+        await _authService.ResetPasswordAsync(dto);
+        return Ok(new { Message = "Password has been reset successfully." });
+    }
+
 }
