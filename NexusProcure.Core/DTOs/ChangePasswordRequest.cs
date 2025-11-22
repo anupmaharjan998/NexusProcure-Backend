@@ -4,9 +4,6 @@ namespace NexusProcure.Core.DTOs;
 
 public class ChangePasswordRequest
 {
-    [EmailAddress]
-    public string Email { get; set; } = string.Empty;
-
     [Required]
     public string CurrentPassword { get; set; } = string.Empty;
 

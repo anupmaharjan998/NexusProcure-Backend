@@ -54,9 +54,9 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request)
+    public async Task<bool> ChangePasswordAsync(string email, ChangePasswordRequest request)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null) return false;
 
         
