@@ -15,7 +15,6 @@ public class UsersController : BaseApiController
     }
 
     [HttpGet]
-    [Authorize(Policy = "VIEW_USERS")]
     public async Task<IActionResult> GetAll() => Ok(await _userService.GetAllAsync());
 
     [HttpGet("{id}")]
@@ -26,6 +25,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "CREATE_USER")]
     public async Task<IActionResult> Create(CreateUserDto dto)
     {
         try
@@ -40,6 +40,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "EDIT_USER")]
     public async Task<IActionResult> Update(Guid id, UpdateUserDto dto)
     {
         var updated = await _userService.UpdateAsync(id, dto);
@@ -47,6 +48,7 @@ public class UsersController : BaseApiController
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "DELETE_USER")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _userService.DeleteAsync(id);

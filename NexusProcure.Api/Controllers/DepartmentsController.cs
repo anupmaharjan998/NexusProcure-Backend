@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs;
 
@@ -24,6 +25,7 @@ public class DepartmentsController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "CREATE_DEPARTMENT")]
     public async Task<IActionResult> Create(CreateDepartmentDto dto)
     {
         var newDept = await _departmentService.CreateAsync(dto);
@@ -31,6 +33,7 @@ public class DepartmentsController : BaseApiController
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "EDIT_DEPARTMENT")]
     public async Task<IActionResult> Update(Guid id, UpdateDepartmentDto dto)
     {
         var updated = await _departmentService.UpdateAsync(id, dto);
@@ -38,6 +41,7 @@ public class DepartmentsController : BaseApiController
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "DELETE_DEPARTMENT")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _departmentService.DeleteAsync(id);
