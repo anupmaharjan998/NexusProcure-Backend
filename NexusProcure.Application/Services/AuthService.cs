@@ -95,7 +95,7 @@ public class AuthService : IAuthService
 
         await _context.SaveChangesAsync();
         
-        var resetLink = $"{_config["Jwt:Key"]!}/reset-password/{user.PasswordResetToken}";
+        var resetLink = $"{_config["Frontend:Url"]!}/reset-password/{user.PasswordResetToken}";
         
         // Queue email with Hangfire
         BackgroundJob.Enqueue<IEmailJobService>(job => job.SendUserPasswordResetTokenEmailAsync(user.Email, user.FullName, resetLink));
