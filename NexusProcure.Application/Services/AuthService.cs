@@ -1,9 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Net;
+using Hangfire;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Infrastructure.Data;
 using NexusProcure.Shared.Helper;
 using Microsoft.AspNetCore.Identity;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.Entities;
 
@@ -80,4 +83,40 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
         return true;
     }
+    
+    
+    public async Task RequestPasswordResetAsync(ForgotPasswordRequestDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == dto.Email.ToLower() && u.IsActive);
+        if (user == null)
+            return; // Don't reveal if user exists
+        user.PasswordResetToken = TokenGenerator.GenerateToken();
+        user.PasswordResetTokenExpiration = DateTime.UtcNow.AddHours(1);
+        user.PasswordResetTokenUsed = false;
+
+        await _context.SaveChangesAsync();
+
+        
+        // Queue email with Hangfire
+        BackgroundJob.Enqueue<IEmailJobService>(job => job.SendUserPasswordResetTokenEmailAsync(user.Email, user.FullName, user.PasswordResetToken));
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequestDto dto)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.PasswordResetToken == dto.Token
+                                      && !u.PasswordResetTokenUsed
+                                      && u.PasswordResetTokenExpiration > DateTime.UtcNow);
+
+        if (user == null)
+            throw new InvalidOperationException("Invalid or expired token");
+        
+        user.PasswordHash = new PasswordHasher<User>().HashPassword(user, dto.NewPassword);
+        
+        user.PasswordResetTokenUsed = true;
+
+        await _context.SaveChangesAsync();
+    }
+
+
 }

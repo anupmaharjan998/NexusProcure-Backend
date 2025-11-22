@@ -6,4 +6,8 @@ public interface IAuthService
 {
     Task<UserResponse?> LoginAsync(LoginRequest request);
     Task<bool> ChangePasswordAsync(string email, ChangePasswordRequest request);
+    
+    Task RequestPasswordResetAsync(ForgotPasswordRequestDto dto);
+    Task ResetPasswordAsync(ResetPasswordRequestDto dto);
+
 }

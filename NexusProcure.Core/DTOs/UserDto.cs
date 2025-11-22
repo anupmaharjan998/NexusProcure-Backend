@@ -46,3 +46,18 @@ public class UpdateUserDto
     public Guid? DepartmentId { get; set; }
     public bool IsActive { get; set; }
 }
+
+public class ForgotPasswordRequestDto
+{
+    [Required]
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequestDto
+{
+    [Required]
+    public string Token { get; set; }
+    [Required]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
