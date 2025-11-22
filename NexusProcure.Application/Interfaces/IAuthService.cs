@@ -8,6 +8,7 @@ public interface IAuthService
     Task<bool> ChangePasswordAsync(string email, ChangePasswordRequest request);
     
     Task RequestPasswordResetAsync(ForgotPasswordRequestDto dto);
+    Task<bool> RequestVerifyTokenAsync(string token);
     Task ResetPasswordAsync(ResetPasswordRequestDto dto);
 
 }
