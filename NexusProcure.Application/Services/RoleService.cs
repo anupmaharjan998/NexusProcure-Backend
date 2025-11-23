@@ -20,15 +20,13 @@ public class RoleService : IRoleService
 
     public async Task<IEnumerable<RoleDto>> GetAllAsync()
     {
-        var roles = await _context.Roles.Include(r => r.RolePermissions).ThenInclude(rp => rp.Permission).ToListAsync();
+        var roles = await _context.Roles.ToListAsync();
         return _mapper.Map<IEnumerable<RoleDto>>(roles);
     }
 
     public async Task<RoleDto?> GetByIdAsync(Guid id)
     {
         var role = await _context.Roles
-            .Include(r => r.RolePermissions)
-            .ThenInclude(rp => rp.Permission)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         return role == null ? null : _mapper.Map<RoleDto>(role);
@@ -52,8 +50,9 @@ public class RoleService : IRoleService
         {
             return null;
         }
-
-        role.Name = dto.Name;
+        
+        if (!string.IsNullOrEmpty(dto.Name)) role.Name = dto.Name;
+        role.Description = dto.Description;
         await _context.SaveChangesAsync();
 
         return _mapper.Map<RoleDto>(role);

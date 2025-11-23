@@ -77,6 +77,7 @@ public class UserService : IUserService
         var user = await _context.Users.FindAsync(id);
         if (user == null) return null;
 
+        if (!string.IsNullOrEmpty(dto.FullName)) user.FullName = dto.FullName;
         if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
         if (dto.RoleId.HasValue) user.RoleId = dto.RoleId.Value;
         if (dto.DepartmentId.HasValue) user.DepartmentId = dto.DepartmentId.Value;

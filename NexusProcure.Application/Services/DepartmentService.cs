@@ -52,6 +52,7 @@ public class DepartmentService : IDepartmentService
             if (department == null) return null;
 
             department.DepartmentName = dto.DepartmentName ?? department.DepartmentName;
+            department.Description = dto.Description;
             if (dto.HeadId.HasValue) department.HeadId = dto.HeadId;
             await _context.SaveChangesAsync();
 

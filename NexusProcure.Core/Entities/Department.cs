@@ -4,6 +4,7 @@ public class Department
 {
     public Guid Id { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
     
     public Guid? HeadId { get; set; }
     public User? Head { get; set; }

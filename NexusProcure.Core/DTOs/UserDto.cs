@@ -27,8 +27,6 @@ public class CreateUserDto
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
     
-    public string Password { get; set; } = string.Empty;
-    
     public bool IsActive { get; set; }
 
     [Required(ErrorMessage = "Please select the role.")]
