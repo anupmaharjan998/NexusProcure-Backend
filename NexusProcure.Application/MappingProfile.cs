@@ -19,8 +19,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // handled manually
 
         // // Role
-        CreateMap<Role, RoleDto>()
-            .ForMember(dest => dest.Permissions, opt => opt.MapFrom(src => src.RolePermissions.Select(rp => rp.Permission)));
+        CreateMap<Role, RoleDto>();
         
         CreateMap<CreateRoleDto, Role>();
         
