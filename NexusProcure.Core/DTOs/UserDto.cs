@@ -8,6 +8,8 @@ public class UserDto
     public string FullName { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? Address { get; set; }
     public Guid? RoleId { get; set; }
     public string? RoleName { get; set; }
     public Guid? DepartmentId { get; set; }
@@ -27,6 +29,9 @@ public class CreateUserDto
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
     
+    [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
+    public string? PhoneNumber { get; set; }
+    
     public bool IsActive { get; set; }
 
     [Required(ErrorMessage = "Please select the role.")]
@@ -42,6 +47,9 @@ public class UpdateUserDto
     public string? Email { get; set; }
     public Guid? RoleId { get; set; }
     public Guid? DepartmentId { get; set; }
+    
+    [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
+    public string? PhoneNumber { get; set; }
     public bool IsActive { get; set; }
 }
 
