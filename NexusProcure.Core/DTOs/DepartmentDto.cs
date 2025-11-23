@@ -6,6 +6,7 @@ public class DepartmentDto
 {
     public Guid Id { get; set; }
     public string DepartmentName { get; set; } = string.Empty;
+    public string Description { get; set; }
     
     public Guid? HeadId { get; set; }
     public string HeadName { get; set; }
