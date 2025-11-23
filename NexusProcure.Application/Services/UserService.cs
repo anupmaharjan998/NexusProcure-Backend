@@ -81,7 +81,7 @@ public class UserService : IUserService
         if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
         if (dto.RoleId.HasValue) user.RoleId = dto.RoleId.Value;
         if (dto.DepartmentId.HasValue) user.DepartmentId = dto.DepartmentId.Value;
-        if (dto.IsActive) user.IsActive = dto.IsActive;
+        user.IsActive = dto.IsActive;
 
         await _context.SaveChangesAsync();
         return _mapper.Map<UserDto>(user);
