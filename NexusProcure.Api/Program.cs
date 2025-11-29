@@ -54,6 +54,12 @@ builder.Services.AddSwaggerGen(c =>
             new string[] { }
         }
     });
+    // FIX: Handle IFormFile for file uploads in Swagger
+    c.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
+    });
     
 });
 
