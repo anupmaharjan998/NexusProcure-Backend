@@ -1,6 +1,10 @@
-﻿using System.Security.Cryptography;
+﻿using System.Net;
+using System.Security.Cryptography;
 using AutoMapper;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Hangfire;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
@@ -16,12 +20,14 @@ public class UserService : IUserService
     private readonly NexusProcureDbContext _context;
     private readonly IMapper _mapper;
     private readonly IEmailService _emailService;
+    private readonly Cloudinary _cloudinary;
 
-    public UserService(NexusProcureDbContext context, IMapper mapper, IEmailService emailService)
+    public UserService(NexusProcureDbContext context, IMapper mapper, IEmailService emailService, Cloudinary cloudinary)
     {
         _context = context;
         _mapper = mapper;
         _emailService = emailService;
+        _cloudinary = cloudinary;
     }
 
     public async Task<IEnumerable<UserDto>> GetAllAsync()
@@ -96,6 +102,51 @@ public class UserService : IUserService
         await _context.SaveChangesAsync();
         return true;
     }
+    
+    public async Task<ProfileImageResponse> UploadProfilePictureAsync(string email, IFormFile file)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    
+        if (user == null)
+            return new ProfileImageResponse { Success = false, Message = "User not found" };
+    
+        if (file == null || file.Length == 0)
+            return new ProfileImageResponse { Success = false, Message = "Invalid file" };
+    
+        // Upload to Cloudinary
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, file.OpenReadStream()),
+            Folder = "nexusprocure/profile_pictures"
+        };
+    
+        var cloudinary = _cloudinary; // Injected via constructor
+        var uploadResult = await cloudinary.UploadAsync(uploadParams);
+    
+        if (uploadResult.StatusCode != HttpStatusCode.OK)
+            return new ProfileImageResponse { Success = false, Message = "Upload failed" };
+    
+        // Delete old photo if exists
+        if (!string.IsNullOrEmpty(user.ProfileImagePublicId))
+        {
+            var deletionParams = new DeletionParams(user.ProfileImagePublicId);
+            await cloudinary.DestroyAsync(deletionParams);
+        }
+    
+        // Update user
+        user.ProfileImageUrl = uploadResult.SecureUrl.ToString();
+        user.ProfileImagePublicId = uploadResult.PublicId;
+    
+        await _context.SaveChangesAsync();
+    
+        return new ProfileImageResponse
+        {
+            Success = true,
+            Url = user.ProfileImageUrl
+        };
+    }
+
+    
 
     private static string GenerateSecurePassword(int length = 12)
     {

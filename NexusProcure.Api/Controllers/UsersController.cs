@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs;
@@ -54,4 +55,21 @@ public class UsersController : BaseApiController
         var result = await _userService.DeleteAsync(id);
         return result ? NoContent() : NotFound();
     }
+    
+    [Authorize]
+    [HttpPost("upload-profile-picture")]
+    public async Task<IActionResult> UploadProfilePicture([FromForm] UploadProfilePictureRequest request)
+    {
+        if (request.File == null || request.File.Length == 0)
+            return BadRequest(new { message = "File is required" });
+
+        //var email = User.FindFirst("email")?.Value;
+        var email = User.FindFirstValue(ClaimTypes.Email);
+
+        var url = await _userService.UploadProfilePictureAsync(email, request.File);
+
+        return Ok(new { imageUrl = url });
+    }
+
+    
 }

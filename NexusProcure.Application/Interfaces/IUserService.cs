@@ -1,4 +1,5 @@
-﻿using NexusProcure.Core.DTOs;
+﻿using Microsoft.AspNetCore.Http;
+using NexusProcure.Core.DTOs;
 
 namespace NexusProcure.Application.Interfaces;
 
@@ -9,4 +10,7 @@ public interface IUserService
     Task<UserDto> CreateAsync(CreateUserDto dto);
     Task<UserDto?> UpdateAsync(Guid id, UpdateUserDto dto);
     Task<bool> DeleteAsync(Guid id);
+    Task<ProfileImageResponse> UploadProfilePictureAsync(string email, IFormFile file);
+    
+
 }
