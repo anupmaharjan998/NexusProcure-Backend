@@ -15,6 +15,7 @@ public class UserDto
     public Guid? DepartmentId { get; set; }
     public string? DepartmentName { get; set; }
     public bool IsActive { get; set; }
+    public string? ProfileImageUrl { get; set; }
 }
 
 public class CreateUserDto
