@@ -50,7 +50,7 @@ public class AuthService : IAuthService
                 FullName = user.FullName,
                 Email = user.Email,
                 Role = user.Role.Name,
-                ProfileImagePublicId= user.ProfileImagePublicId
+                ProfileImageUrl= user.ProfileImageUrl
             },
             Token = token,
             Permissions = permissions
