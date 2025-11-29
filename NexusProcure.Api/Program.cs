@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Hangfire;
@@ -53,6 +54,7 @@ builder.Services.AddSwaggerGen(c =>
             new string[] { }
         }
     });
+    
 });
 
 
@@ -102,6 +104,17 @@ builder.Services.AddCors(options =>
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
+});
+
+builder.Services.AddSingleton(provider =>
+{
+    var config = builder.Configuration.GetSection("Cloudinary");
+    var account = new Account(
+        config["CloudName"],
+        config["ApiKey"],
+        config["ApiSecret"]
+    );
+    return new Cloudinary(account);
 });
 
 // Application Services

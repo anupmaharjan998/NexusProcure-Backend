@@ -22,6 +22,10 @@ public class User : BaseEntity
     public Guid? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }
     public bool PasswordResetTokenUsed { get; set; } = false;
+    
+    public string? ProfileImageUrl { get; set; }
+    public string? ProfileImagePublicId { get; set; }
+
 
     // Navigation
     public ICollection<Requisition> Requisitions { get; set; } = new List<Requisition>();
