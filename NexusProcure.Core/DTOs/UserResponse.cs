@@ -15,5 +15,5 @@ public class UserResponseDto
     public string FullName { get; set; } = null!;
     public string Email { get; set; } = null!;
     public string Role { get; set; } = null!;
-    public string? ProfileImagePublicId { get; set; }
+    public string? ProfileImageUrl { get; set; }
 }
