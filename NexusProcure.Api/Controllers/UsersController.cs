@@ -58,15 +58,15 @@ public class UsersController : BaseApiController
     
     [Authorize]
     [HttpPost("upload-profile-picture")]
-    public async Task<IActionResult> UploadProfilePicture([FromForm] UploadProfilePictureRequest request)
+    public async Task<IActionResult> UploadProfilePicture([FromForm] IFormFile fileRequest)
     {
-        if (request.File == null || request.File.Length == 0)
+        if (fileRequest == null || fileRequest.Length == 0)
             return BadRequest(new { message = "File is required" });
 
         //var email = User.FindFirst("email")?.Value;
         var email = User.FindFirstValue(ClaimTypes.Email);
 
-        var url = await _userService.UploadProfilePictureAsync(email, request.File);
+        var url = await _userService.UploadProfilePictureAsync(email, fileRequest);
 
         return Ok(new { imageUrl = url });
     }
