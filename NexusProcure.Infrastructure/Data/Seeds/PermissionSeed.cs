@@ -29,10 +29,13 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("30000000-0000-0000-0000-000000000004"), Group = "Department", Key = "DELETE_DEPARTMENT", Description = "Delete departments" },
 
                 // ------------------ Vendor Management ------------------
-                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000001"), Group = "Vendor", Key = "VIEW_VENDORS", Description = "View vendor list" },
-                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000002"), Group = "Vendor", Key = "CREATE_VENDOR", Description = "Add new vendor" },
-                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000003"), Group = "Vendor", Key = "EDIT_VENDOR", Description = "Edit vendor details" },
-                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000004"), Group = "Vendor", Key = "DELETE_VENDOR", Description = "Delete vendor" },
+                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000001"), Group = "Vendor", Key = "ADD_VENDOR", Description = "Create a new vendor" },
+                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000002"), Group = "Vendor", Key = "EDIT_VENDOR", Description = "Edit vendor details" },
+                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000003"), Group = "Vendor", Key = "VIEW_VENDOR", Description = "View vendor records" },
+                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000004"), Group = "Vendor", Key = "APPROVE_VENDOR", Description = "Approve or reject vendor applications" },
+                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000005"), Group = "Vendor", Key = "DELETE_VENDOR", Description = "Delete vendor records" },
+                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000006"), Group = "Vendor", Key = "UPLOAD_VENDOR_DOCUMENT", Description = "Upload vendor documents" },
+                new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000007"), Group = "Vendor", Key = "DELETE_VENDOR_DOCUMENT", Description = "Delete vendor document" },
 
                 // ------------------ Procurement ------------------
                 new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000001"), Group = "Procurement", Key = "CREATE_REQUISITION", Description = "Create purchase requisition" },
@@ -56,6 +59,7 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("80000000-0000-0000-0000-000000000001"), Group = "System", Key = "MANAGE_SYSTEM_SETTINGS", Description = "Change global settings" },
                 new Permission { Id = Guid.Parse("80000000-0000-0000-0000-000000000002"), Group = "System", Key = "VIEW_AUDIT_LOGS", Description = "View audit logs" },
                 new Permission { Id = Guid.Parse("80000000-0000-0000-0000-000000000003"), Group = "System", Key = "MANAGE_APPROVAL_WORKFLOW", Description = "Configure approval workflow" },
+
             };
 
             modelBuilder.Entity<Permission>().HasData(permissions);

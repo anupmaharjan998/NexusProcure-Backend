@@ -130,6 +130,7 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IVendorService, VendorService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
