@@ -15,6 +15,7 @@ public class DepartmentsController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll() => Ok(await _departmentService.GetAllAsync());
 
     [HttpGet("{id}")]

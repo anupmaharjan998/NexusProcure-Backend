@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using NexusProcure.Core.DTOs;
+using NexusProcure.Core.DTOs.Vendor;
 using NexusProcure.Core.Entities;
 
 namespace NexusProcure.Application;
@@ -23,15 +24,20 @@ public class MappingProfile : Profile
         
         CreateMap<CreateRoleDto, Role>();
         
-        // // Department
+        // Department
         CreateMap<Department, DepartmentDto>()
             .ForMember(dest => dest.HeadName, opt => opt.MapFrom(src => src.Head != null ? src.Head.FullName : null))
             .ForMember(dest => dest.EmployeesCount, opt => opt.MapFrom(src => src.Users != null ? src.Users.Count : 0));
         
         CreateMap<CreateDepartmentDto, Department>();
-        //
+        
         // // Permission
         CreateMap<Permission, PermissionDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Description));
+        
+        // Vendor
+        CreateMap<VendorRequestDto, Vendor>();
+        CreateMap<Vendor, VendorResponseDto>()
+            .ForMember(dest => dest.Documents, opt => opt.Ignore());
     }
 }

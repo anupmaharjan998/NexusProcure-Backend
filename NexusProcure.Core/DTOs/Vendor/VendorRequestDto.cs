@@ -1,8 +1,7 @@
-﻿namespace NexusProcure.Core.Entities;
+﻿namespace NexusProcure.Core.DTOs.Vendor;
 
-public class Vendor
+public class VendorRequestDto
 {
-    public Guid Id { get; set; }
     public string VendorName { get; set; } = null!;
     public string? CompanyName { get; set; }
     public string? Email { get; set; }
@@ -10,11 +9,6 @@ public class Vendor
     public string? Address { get; set; }
     public string? TaxId { get; set; }
     public string? Category { get; set; }
-    public string Status { get; set; } = "Pending";
     public string? BankAccount { get; set; }
     public string? PaymentTerms { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-
-    public ICollection<VendorDocument>? Documents { get; set; }
 }
