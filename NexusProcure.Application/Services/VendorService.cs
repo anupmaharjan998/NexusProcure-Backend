@@ -97,7 +97,7 @@ public class VendorService : IVendorService
 
         var doc = new VendorDocument
         {
-            VendorId = vendorId,
+            VendorId = vendor.Id,
             FileUrl = uploadResult.SecureUrl.ToString(),
             FileName = file.FileName,
             FileType = file.ContentType,

@@ -27,7 +27,7 @@ public class VendorsController : BaseApiController
     }
 
     // UPDATE VENDOR
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id}")]
     [Authorize(Policy = "EDIT_VENDOR")]
     public async Task<IActionResult> Update(Guid id, VendorRequestDto dto)
     {
@@ -37,7 +37,7 @@ public class VendorsController : BaseApiController
     }
 
     // VIEW SINGLE VENDOR
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id}")]
     [Authorize(Policy = "VIEW_VENDOR")]
     public async Task<IActionResult> Get(Guid id)
     {
@@ -56,7 +56,7 @@ public class VendorsController : BaseApiController
     }
 
     // APPROVE VENDOR
-    [HttpPatch("{id:guid}/status")]
+    [HttpPatch("{id}/status")]
     [Authorize(Policy = "APPROVE_VENDOR")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] string status)
     {
@@ -66,7 +66,7 @@ public class VendorsController : BaseApiController
     }
 
     // DELETE VENDOR
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id}")]
     [Authorize(Policy = "DELETE_VENDOR")]
     public async Task<IActionResult> Delete(Guid id)
     {
@@ -76,7 +76,7 @@ public class VendorsController : BaseApiController
     }
 
     // UPLOAD VENDOR DOCUMENT
-    [HttpPost("{id:guid}/documents")]
+    [HttpPost("{id}/documents")]
     [Authorize(Policy = "UPLOAD_VENDOR_DOCUMENT")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadDocument(Guid id, IFormFile file)
@@ -87,7 +87,7 @@ public class VendorsController : BaseApiController
     }
 
     // DELETE DOCUMENT
-    [HttpDelete("documents/{docId:guid}")]
+    [HttpDelete("documents/{docId}")]
     [Authorize(Policy = "DELETE_VENDOR_DOCUMENT")]
     public async Task<IActionResult> DeleteDocument(Guid docId)
     {
