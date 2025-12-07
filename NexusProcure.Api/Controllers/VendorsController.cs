@@ -79,7 +79,7 @@ public class VendorsController : BaseApiController
     [HttpPost("{id}/documents")]
     [Authorize(Policy = "UPLOAD_VENDOR_DOCUMENT")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadDocument(Guid id, IFormFile file)
+    public async Task<IActionResult> UploadDocument(Guid id,[FromForm]  IFormFile file)
     {
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
         var doc = await _service.UploadVendorDocumentAsync(id, file, userId);

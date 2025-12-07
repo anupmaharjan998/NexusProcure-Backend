@@ -11,6 +11,7 @@ public class VendorResponseDto
     public string? TaxId { get; set; }
     public string? Category { get; set; }
     public string Status { get; set; } = null!;
+    public string? BankAccount { get; set; }
     public List<string>? Documents { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
