@@ -146,7 +146,18 @@ public class UserService : IUserService
         };
     }
 
-    
+    public async Task<UserDto?> UserProfileUpdateAsync(Guid id, UserUpdateDto dto)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return null;
+
+        if (!string.IsNullOrEmpty(dto.PhoneNumber))user.PhoneNumber = dto.PhoneNumber;
+        if (!string.IsNullOrEmpty(dto.Address))user.Address = dto.Address;
+
+        await _context.SaveChangesAsync();
+        return _mapper.Map<UserDto>(user);
+    }
+
 
     private static string GenerateSecurePassword(int length = 12)
     {
