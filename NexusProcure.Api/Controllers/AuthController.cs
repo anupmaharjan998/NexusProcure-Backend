@@ -25,38 +25,47 @@ public class AuthController : BaseApiController
         return Ok(result);
     }
 
+    
     [HttpPost("change-password")]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+{
+    if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
+        string.IsNullOrWhiteSpace(request.NewPassword) ||
+        string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
     {
-        if (string.IsNullOrWhiteSpace(request.CurrentPassword) ||
-            string.IsNullOrWhiteSpace(request.NewPassword) ||
-            string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
-        {
-            return BadRequest(new { message = "All fields are required" });
-        }
+        return BadRequest(new { message = "All fields are required" });
+    }
 
-        
-        var email = User.FindFirstValue(ClaimTypes.Email);
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            return Unauthorized(new { message = "Email not found in token" });
-        }
+    var email = User.FindFirstValue(ClaimTypes.Email);
+    if (string.IsNullOrWhiteSpace(email))
+    {
+        return Unauthorized(new { message = "Email not found in token" });
+    }
 
-        if (request.NewPassword != request.ConfirmNewPassword)
-        {
-            return BadRequest(new { message = "New password and confirmation do not match" });
-        }
+    if (request.NewPassword != request.ConfirmNewPassword)
+    {
+        return BadRequest(new { message = "New password and confirmation do not match" });
+    }
 
+    try
+    {
         var success = await _authService.ChangePasswordAsync(email, request);
+
         if (!success)
         {
-            // For security, avoid revealing whether email exists or password mismatch
-            return Unauthorized(new { message = "Invalid credentials or unable to change password" });
+            // More specific error for incorrect current password
+            return BadRequest(new { message = "Current password is incorrect or password could not be updated" });
         }
 
         return Ok(new { message = "Password changed successfully" });
     }
-    
+    catch (Exception ex)
+    {
+        // Log the exception if needed
+        return StatusCode(500, new { message = "An error occurred while changing the password", detail = ex.Message });
+    }
+}
+
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword(ForgotPasswordRequestDto dto)
     {
