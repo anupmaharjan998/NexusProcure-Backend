@@ -11,6 +11,5 @@ public interface IUserService
     Task<UserDto?> UpdateAsync(Guid id, UpdateUserDto dto);
     Task<bool> DeleteAsync(Guid id);
     Task<ProfileImageResponse> UploadProfilePictureAsync(string email, IFormFile file);
-    
-
+    Task<UserDto?> UserProfileUpdateAsync(Guid id, UserUpdateDto dto);
 }

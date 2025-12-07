@@ -68,3 +68,11 @@ public class ResetPasswordRequestDto
     public string NewPassword { get; set; } = string.Empty;
 }
 
+
+public class UserUpdateDto
+{
+    [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
+    public string? PhoneNumber { get; set; }
+    public string? Address { get; set; }
+}
+

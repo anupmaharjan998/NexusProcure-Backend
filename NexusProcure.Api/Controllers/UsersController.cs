@@ -70,6 +70,17 @@ public class UsersController : BaseApiController
 
         return Ok(new { imageUrl = url });
     }
+    
+    
+    
+    [HttpPut]
+    [Authorize]
+    public async Task<IActionResult> UserProfileUpdate(UserUpdateDto dto)
+    {
+        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+        var updated = await _userService.UserProfileUpdateAsync(userId, dto);
+        return updated == null ? NotFound() : Ok(updated);
+    }
 
     
 }
