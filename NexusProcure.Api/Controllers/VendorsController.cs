@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Core.DTOs;
 using NexusProcure.Core.DTOs.Vendor;
+using NexusProcure.Core.Enums;
 
 namespace NexusProcure.Api.Controllers;
 
@@ -94,5 +96,22 @@ public class VendorsController : BaseApiController
         var ok = await _service.DeleteVendorDocumentAsync(docId);
         if (!ok) return NotFound();
         return NoContent();
+    }
+    
+    
+    [HttpGet]
+    [Authorize]
+    public ActionResult<IEnumerable<PaymentTermDto>> GetPaymentTerms()
+    {
+        var paymentTerms = Enum.GetValues(typeof(PaymentTerm))
+            .Cast<PaymentTerm>()
+            .Select(pt => new PaymentTermDto
+            {
+                Value = (int)pt,
+                DisplayName = pt.GetDisplayName()
+            })
+            .ToList();
+
+        return Ok(paymentTerms);
     }
 }

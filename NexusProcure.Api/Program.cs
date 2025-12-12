@@ -114,13 +114,10 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton(provider =>
 {
-    var config = builder.Configuration.GetSection("Cloudinary");
-    var account = new Account(
-        config["CloudName"],
-        config["ApiKey"],
-        config["ApiSecret"]
-    );
-    return new Cloudinary(account);
+    var url = builder.Configuration["Supabase:Url"];
+    var key = builder.Configuration["Supabase:ServiceKey"];
+
+    return new Supabase.Client(url, key);
 });
 
 // Application Services
@@ -131,6 +128,7 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IVendorService, VendorService>();
+builder.Services.AddScoped<ICommonService, CommonService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));

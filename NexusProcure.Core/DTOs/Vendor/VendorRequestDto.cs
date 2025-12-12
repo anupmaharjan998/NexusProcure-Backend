@@ -11,4 +11,5 @@ public class VendorRequestDto
     public string? Category { get; set; }
     public string? BankAccount { get; set; }
     public string? PaymentTerms { get; set; }
+    public string? Status { get; set; }
 }
