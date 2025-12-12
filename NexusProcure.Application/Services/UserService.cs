@@ -12,6 +12,7 @@ using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.Entities;
 using NexusProcure.Infrastructure.Data;
+using Supabase;
 
 namespace NexusProcure.Application.Services;
 
@@ -21,13 +22,15 @@ public class UserService : IUserService
     private readonly IMapper _mapper;
     private readonly IEmailService _emailService;
     private readonly Cloudinary _cloudinary;
+    private readonly Client _supabase;
 
-    public UserService(NexusProcureDbContext context, IMapper mapper, IEmailService emailService, Cloudinary cloudinary)
+    public UserService(NexusProcureDbContext context, IMapper mapper, IEmailService emailService, Cloudinary cloudinary, Client supabase)
     {
         _context = context;
         _mapper = mapper;
         _emailService = emailService;
         _cloudinary = cloudinary;
+        _supabase = supabase;
     }
 
     public async Task<IEnumerable<UserDto>> GetAllAsync()
@@ -104,47 +107,77 @@ public class UserService : IUserService
     }
     
     public async Task<ProfileImageResponse> UploadProfilePictureAsync(string email, IFormFile file)
+{
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    if (user == null)
+        return new ProfileImageResponse { Success = false, Message = "User not found" };
+
+    if (file == null || file.Length == 0)
+        return new ProfileImageResponse { Success = false, Message = "Invalid file" };
+
+    // Your bucket
+    var bucket = "profile-pictures";
+
+    // File path inside bucket
+    var filePath = $"{user.Id}/{file.FileName}";
+
+    try
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-    
-        if (user == null)
-            return new ProfileImageResponse { Success = false, Message = "User not found" };
-    
-        if (file == null || file.Length == 0)
-            return new ProfileImageResponse { Success = false, Message = "Invalid file" };
-    
-        // Upload to Cloudinary
-        var uploadParams = new ImageUploadParams
-        {
-            File = new FileDescription(file.FileName, file.OpenReadStream()),
-            Folder = "nexusprocure/profile_pictures"
-        };
-    
-        var cloudinary = _cloudinary; // Injected via constructor
-        var uploadResult = await cloudinary.UploadAsync(uploadParams);
-    
-        if (uploadResult.StatusCode != HttpStatusCode.OK)
+        // Convert IFormFile → byte[]
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var fileBytes = memoryStream.ToArray();
+
+        // Upload to Supabase Storage
+        var uploadResponse = await _supabase.Storage
+            .From(bucket)
+            .Upload(
+                fileBytes,
+                filePath,
+                new Supabase.Storage.FileOptions
+                {
+                    ContentType = file.ContentType,
+                    Upsert = true
+                }
+            );
+
+        if (uploadResponse == null)
             return new ProfileImageResponse { Success = false, Message = "Upload failed" };
-    
-        // Delete old photo if exists
-        if (!string.IsNullOrEmpty(user.ProfileImagePublicId))
+
+        // Delete old profile image
+        if (!string.IsNullOrWhiteSpace(user.ProfileImagePublicId))
         {
-            var deletionParams = new DeletionParams(user.ProfileImagePublicId);
-            await cloudinary.DestroyAsync(deletionParams);
+            await _supabase.Storage
+                .From(bucket)
+                .Remove(new List<string> { user.ProfileImagePublicId });
         }
-    
-        // Update user
-        user.ProfileImageUrl = uploadResult.SecureUrl.ToString();
-        user.ProfileImagePublicId = uploadResult.PublicId;
-    
+
+        // Generate public URL
+        string publicUrl = _supabase.Storage
+            .From(bucket)
+            .GetPublicUrl(filePath);
+
+        // Save changes in database
+        user.ProfileImageUrl = publicUrl;
+        user.ProfileImagePublicId = filePath;
+
         await _context.SaveChangesAsync();
-    
+
         return new ProfileImageResponse
         {
             Success = true,
-            Url = user.ProfileImageUrl
+            Url = publicUrl
         };
     }
+    catch (Exception ex)
+    {
+        return new ProfileImageResponse
+        {
+            Success = false,
+            Message = "Upload error: " + ex.Message
+        };
+    }
+}
 
     public async Task<UserDto?> UserProfileUpdateAsync(Guid id, UserUpdateDto dto)
     {

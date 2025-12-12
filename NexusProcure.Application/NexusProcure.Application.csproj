@@ -19,6 +19,8 @@
       <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
       <PackageReference Include="Hangfire.PostgreSql" Version="1.20.12" />
       <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.1" />
+      <PackageReference Include="Supabase" Version="1.1.1" />
+      <PackageReference Include="Supabase.Storage" Version="2.4.1" />
     </ItemGroup>
 
 </Project>

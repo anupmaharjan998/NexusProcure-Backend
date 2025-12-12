@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    [Migration("20251123061648_AddedPhoneAddressInUser")]
-    partial class AddedPhoneAddressInUser
+    [Migration("20251212130257_ResetMigartion")]
+    partial class ResetMigartion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -307,30 +307,51 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("40000000-0000-0000-0000-000000000001"),
-                            Description = "View vendor list",
+                            Description = "Create a new vendor",
                             Group = "Vendor",
-                            Key = "VIEW_VENDORS"
+                            Key = "ADD_VENDOR"
                         },
                         new
                         {
                             Id = new Guid("40000000-0000-0000-0000-000000000002"),
-                            Description = "Add new vendor",
-                            Group = "Vendor",
-                            Key = "CREATE_VENDOR"
-                        },
-                        new
-                        {
-                            Id = new Guid("40000000-0000-0000-0000-000000000003"),
                             Description = "Edit vendor details",
                             Group = "Vendor",
                             Key = "EDIT_VENDOR"
                         },
                         new
                         {
+                            Id = new Guid("40000000-0000-0000-0000-000000000003"),
+                            Description = "View vendor records",
+                            Group = "Vendor",
+                            Key = "VIEW_VENDOR"
+                        },
+                        new
+                        {
                             Id = new Guid("40000000-0000-0000-0000-000000000004"),
-                            Description = "Delete vendor",
+                            Description = "Approve or reject vendor applications",
+                            Group = "Vendor",
+                            Key = "APPROVE_VENDOR"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000005"),
+                            Description = "Delete vendor records",
                             Group = "Vendor",
                             Key = "DELETE_VENDOR"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000006"),
+                            Description = "Upload vendor documents",
+                            Group = "Vendor",
+                            Key = "UPLOAD_VENDOR_DOCUMENT"
+                        },
+                        new
+                        {
+                            Id = new Guid("40000000-0000-0000-0000-000000000007"),
+                            Description = "Delete vendor document",
+                            Group = "Vendor",
+                            Key = "DELETE_VENDOR_DOCUMENT"
                         },
                         new
                         {
@@ -689,6 +710,21 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("40000000-0000-0000-0000-000000000005")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("40000000-0000-0000-0000-000000000006")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("40000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("50000000-0000-0000-0000-000000000001")
                         },
                         new
@@ -805,6 +841,12 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text");
 
+                    b.Property<string>("ProfileImagePublicId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProfileImageUrl")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid");
 
@@ -833,6 +875,19 @@ namespace NexusProcure.Infrastructure.Migrations
                             PasswordResetTokenUsed = false,
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             Username = "admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("a87f3d2b-0f0d-4b4e-9d2a-4e09d68f4103"),
+                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Email = "admin@mail.com",
+                            FullName = "",
+                            IsActive = false,
+                            PasswordHash = "AQAAAAIAAYagAAAAEHsHTY55ymmyC5FW7c6RpK2s/HWufLsNpUswO1iSjCFPadhi/WF+HZo86Twk4Rl4NQ==",
+                            PasswordResetTokenExpiration = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            PasswordResetTokenUsed = false,
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            Username = "admin"
                         });
                 });
 
@@ -843,20 +898,38 @@ namespace NexusProcure.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Address")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankAccount")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Category")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentTerms")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("ContactEmail")
-                        .IsRequired()
+                    b.Property<string>("TaxId")
                         .HasColumnType("text");
 
-                    b.Property<string>("ContactPerson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("VendorName")
                         .IsRequired()
@@ -865,6 +938,44 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Vendors");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.VendorDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PublicId")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UploadedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("VendorDocuments");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Approval", b =>
@@ -946,7 +1057,7 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("NexusProcure.Core.Entities.Vendor", "Vendor")
-                        .WithMany("PurchaseOrders")
+                        .WithMany()
                         .HasForeignKey("VendorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1016,17 +1127,29 @@ namespace NexusProcure.Infrastructure.Migrations
                 {
                     b.HasOne("NexusProcure.Core.Entities.Department", "Department")
                         .WithMany("Users")
-                        .HasForeignKey("DepartmentId");
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("NexusProcure.Core.Entities.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Department");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.VendorDocument", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Vendor", "Vendor")
+                        .WithMany("Documents")
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Department", b =>
@@ -1076,7 +1199,7 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
                 {
-                    b.Navigation("PurchaseOrders");
+                    b.Navigation("Documents");
                 });
 #pragma warning restore 612, 618
         }
