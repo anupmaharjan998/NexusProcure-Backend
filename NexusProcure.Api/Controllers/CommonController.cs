@@ -25,6 +25,6 @@ public class CommonController : BaseApiController
     public async Task<IActionResult> AddCategory([FromBody] CategoryRequest request)
     {
         var result = await _commonService.AddCategoryAsync(request);
-        return CreatedAtAction(nameof(GetAll), new { id = result.Id }, result);
+        return CreatedAtAction(nameof(GetAllCategory), new { id = result.Id }, result);
     }
 }
