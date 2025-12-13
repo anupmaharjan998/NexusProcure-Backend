@@ -99,7 +99,7 @@ public class VendorsController : BaseApiController
     }
     
     
-    [HttpGet]
+    [HttpGet("get-payment-terms")]
     [Authorize]
     public ActionResult<IEnumerable<PaymentTermDto>> GetPaymentTerms()
     {

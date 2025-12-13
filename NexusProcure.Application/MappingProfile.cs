@@ -39,5 +39,8 @@ public class MappingProfile : Profile
         CreateMap<VendorRequestDto, Vendor>();
         CreateMap<Vendor, VendorResponseDto>()
             .ForMember(dest => dest.Documents, opt => opt.Ignore());
+        
+        CreateMap<Category, CategoryResponse>();
+        CreateMap<CategoryRequest, Category>();
     }
 }
