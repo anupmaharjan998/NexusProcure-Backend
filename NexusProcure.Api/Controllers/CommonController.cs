@@ -14,14 +14,14 @@ public class CommonController : BaseApiController
         _commonService = commonService;
     }
     
-    [HttpGet]
+    [HttpGet("getAllCategories")]
     public async Task<IActionResult> GetAllCategory()
     {
         var result = await _commonService.GetAllCategoryAsync();
         return Ok(result);
     }
 
-    [HttpPost]
+    [HttpPost("addCategory")]
     public async Task<IActionResult> AddCategory([FromBody] CategoryRequest request)
     {
         var result = await _commonService.AddCategoryAsync(request);
