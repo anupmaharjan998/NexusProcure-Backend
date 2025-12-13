@@ -6,4 +6,6 @@ public class Category
     public string Name { get; set; }
     public string Type { get; set; }
     public string? Description { get; set; }
+    
+    public ICollection<Vendor>? Vendors { get; set; }
 }
