@@ -61,7 +61,8 @@ public class VendorService : IVendorService
 
     public async Task<IEnumerable<VendorResponseDto>> GetAllVendorsAsync(string? status = null, string? search = null)
     {
-        var q = _context.Vendors.Include(v => v.Documents).AsQueryable();
+        var q = _context.Vendors.Include(v => v.Documents)
+                                        .Include(c => c.Category).AsQueryable();
         if (!string.IsNullOrEmpty(status)) q = q.Where(v => v.Status == status);
         if (!string.IsNullOrEmpty(search)) q = q.Where(v => v.VendorName.Contains(search) || v.CompanyName.Contains(search));
         return await q.OrderByDescending(v => v.CreatedAt)
