@@ -114,6 +114,17 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton(provider =>
 {
+    var config = builder.Configuration.GetSection("Cloudinary");
+    var account = new Account(
+        config["CloudName"],
+        config["ApiKey"],
+        config["ApiSecret"]
+    );
+    return new Cloudinary(account);
+});
+
+builder.Services.AddSingleton(provider =>
+{
     var url = builder.Configuration["Supabase:Url"];
     var key = builder.Configuration["Supabase:ServiceKey"];
 
