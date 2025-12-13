@@ -1,4 +1,5 @@
-﻿using NexusProcure.Core.Enums;
+﻿using NexusProcure.Core.Entities;
+using NexusProcure.Core.Enums;
 
 namespace NexusProcure.Core.DTOs.Vendor;
 
@@ -11,7 +12,6 @@ public class VendorRequestDto
     public string? Address { get; set; }
     public TaxType? TaxType { get; set; }
     public string? TaxId { get; set; }
-    public string Category { get; set; }
     public Guid CategoryId { get; set; }
     public string? BankName { get; set; }
     public string? BankBranch { get; set; }
