@@ -69,7 +69,24 @@ public class NexusProcureDbContext : DbContext
             .WithMany(r => r.Users)
             .HasForeignKey(u => u.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        // Vendor → Category (optional 1-M)
+        modelBuilder.Entity<Vendor>()
+            .HasOne(v => v.Category)
+            .WithMany(c => c.Vendors)
+            .HasForeignKey(v => v.CategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
 
+        // Enum conversions for Vendor
+        modelBuilder.Entity<Vendor>()
+            .Property(v => v.PaymentTerms)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<Vendor>()
+            .Property(v => v.TaxType)
+            .HasConversion<string>()
+            .HasMaxLength(10);
         
         // Vendor → Documents (1-M)
         modelBuilder.Entity<VendorDocument>()

@@ -1,4 +1,6 @@
-﻿namespace NexusProcure.Core.Entities;
+﻿using NexusProcure.Core.Enums;
+
+namespace NexusProcure.Core.Entities;
 
 public class Vendor
 {
@@ -9,12 +11,20 @@ public class Vendor
     public string? PhoneNumber { get; set; }
     public string? Address { get; set; }
     public string? TaxId { get; set; }
-    public string? Category { get; set; }
+    public TaxType? TaxType { get; set; }
     public string Status { get; set; } = "Pending";
+    
+    public string? BankName { get; set; }
+    public string? BankBranch { get; set; }
     public string? BankAccount { get; set; }
-    public string? PaymentTerms { get; set; }
+    
+    public PaymentTerm PaymentTerms { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    
+    // Foreign key to Category table
+    public Guid? CategoryId { get; set; }
+    public Category Category { get; set; }
 
     public ICollection<VendorDocument>? Documents { get; set; }
 }
