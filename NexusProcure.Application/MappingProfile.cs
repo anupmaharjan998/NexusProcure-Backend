@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using NexusProcure.Core.DTOs;
+using NexusProcure.Core.DTOs.Procurement;
 using NexusProcure.Core.DTOs.Vendor;
 using NexusProcure.Core.Entities;
 
@@ -43,5 +44,23 @@ public class MappingProfile : Profile
         
         CreateMap<Category, CategoryResponse>();
         CreateMap<CategoryRequest, Category>();
+        
+        // RequisitionItem -> RequisitionItemDto
+        CreateMap<RequisitionItem, RequisitionItemDto>();
+
+// Requisition -> RequisitionResponseDto
+        CreateMap<Requisition, RequisitionResponseDto>()
+            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
+
+// Optionally, also map nested PurchaseOrderItem if needed
+        // CreateMap<PurchaseOrder, PurchaseOrderDto>()
+        //     .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
+
+        CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>();
+
+        //CreateMap<CreateRoleDto, Role>();
+        
+        
+        CreateMap<ApprovalLevel, ApprovalLevelResponseDto>();
     }
 }

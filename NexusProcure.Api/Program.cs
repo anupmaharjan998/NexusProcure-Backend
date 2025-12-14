@@ -14,9 +14,11 @@ using NexusProcure.Api.hangfire;
 using NexusProcure.Application;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Interfaces.BackgroundJobs;
+using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Application.Models;
 using NexusProcure.Application.Services;
 using NexusProcure.Application.Services.BackgroundJobs;
+using NexusProcure.Application.Services.Procurement;
 using NexusProcure.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -140,6 +142,9 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IVendorService, VendorService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
+builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
+builder.Services.AddScoped<IRequisitionService, RequisitionService>();
+builder.Services.AddScoped<IApprovalLevelService, ApprovalLevelService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
