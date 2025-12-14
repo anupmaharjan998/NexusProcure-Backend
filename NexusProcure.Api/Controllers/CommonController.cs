@@ -27,4 +27,25 @@ public class CommonController : BaseApiController
         var result = await _commonService.AddCategoryAsync(request);
         return CreatedAtAction(nameof(GetAllCategory), new { id = result.Id }, result);
     }
+    
+    [HttpGet("get-category/{id}")]
+    public async Task<IActionResult> GetCategoryById(Guid id)
+    {
+        var role = await _commonService.GetByCategoryByIdAsync(id);
+        return role == null ? NotFound() : Ok(role);
+    }
+    
+    [HttpPut("{id}/update-category")]
+    public async Task<IActionResult> Update(Guid id, CategoryRequest dto)
+    {
+        var updated = await _commonService.UpdateCategoryAsync(id, dto);
+        return updated == null ? NotFound() : Ok(updated);
+    }
+
+    [HttpDelete("{id}/delete-category")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var result = await _commonService.DeleteCategoryAsync(id);
+        return result ? NoContent() : NotFound();
+    }
 }

@@ -59,6 +59,12 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("80000000-0000-0000-0000-000000000001"), Group = "System", Key = "MANAGE_SYSTEM_SETTINGS", Description = "Change global settings" },
                 new Permission { Id = Guid.Parse("80000000-0000-0000-0000-000000000002"), Group = "System", Key = "VIEW_AUDIT_LOGS", Description = "View audit logs" },
                 new Permission { Id = Guid.Parse("80000000-0000-0000-0000-000000000003"), Group = "System", Key = "MANAGE_APPROVAL_WORKFLOW", Description = "Configure approval workflow" },
+                
+                // ------------------ System & Admin ------------------
+                new Permission { Id = Guid.Parse("90000000-0000-0000-0000-000000000001"), Group = "Category", Key = "VIEW_CATEGORIES", Description = "View category" },
+                
+                // ------------------ Permissions ------------------
+                new Permission { Id = Guid.Parse("11000000-0000-0000-0000-000000000001"), Group = "Permissions", Key = "VIEW_PERMISSIONS", Description = "View permissions" },
 
             };
 
