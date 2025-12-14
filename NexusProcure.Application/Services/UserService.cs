@@ -21,15 +21,13 @@ public class UserService : IUserService
     private readonly NexusProcureDbContext _context;
     private readonly IMapper _mapper;
     private readonly IEmailService _emailService;
-    private readonly Cloudinary _cloudinary;
     private readonly Client _supabase;
 
-    public UserService(NexusProcureDbContext context, IMapper mapper, IEmailService emailService, Cloudinary cloudinary, Client supabase)
+    public UserService(NexusProcureDbContext context, IMapper mapper, IEmailService emailService, Client supabase)
     {
         _context = context;
         _mapper = mapper;
         _emailService = emailService;
-        _cloudinary = cloudinary;
         _supabase = supabase;
     }
 

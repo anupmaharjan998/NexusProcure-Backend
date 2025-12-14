@@ -1,12 +1,14 @@
 ﻿using AutoMapper;
 using CloudinaryDotNet;
-using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs.Vendor;
 using NexusProcure.Core.Entities;
 using NexusProcure.Infrastructure.Data;
+using Supabase.Storage;
+using Client = Supabase.Client;
+using FileOptions = Supabase.Storage.FileOptions;
 
 namespace NexusProcure.Application.Services;
 
@@ -15,12 +17,14 @@ public class VendorService : IVendorService
     private readonly NexusProcureDbContext _context;
     private readonly IMapper _mapper;
     private readonly Cloudinary _cloudinary; // injected if using Cloudinary
+    private readonly Client _supabase;
 
-    public VendorService(NexusProcureDbContext context, IMapper mapper, Cloudinary cloudinary)
+    public VendorService(NexusProcureDbContext context, IMapper mapper, Cloudinary cloudinary, Client supabase)
     {
         _context = context;
         _mapper = mapper;
         _cloudinary = cloudinary;
+        _supabase = supabase;
     }
 
     public async Task<VendorResponseDto> CreateVendorAsync(VendorRequestDto dto)
@@ -52,22 +56,27 @@ public class VendorService : IVendorService
 
     public async Task<VendorResponseDto?> GetVendorByIdAsync(Guid id)
     {
-        var vendor = await _context.Vendors.Include(v => v.Documents).FirstOrDefaultAsync(v => v.Id == id);
+        var vendor = await _context.Vendors
+            .Include(v => v.Documents)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == id);
+
         if (vendor == null) return null;
-        var dto = _mapper.Map<VendorResponseDto>(vendor);
-        dto.Documents = vendor.Documents?.Select(d => d.FileUrl).ToList();
-        return dto;
+
+        return _mapper.Map<VendorResponseDto>(vendor);
     }
+
 
     public async Task<IEnumerable<VendorResponseDto>> GetAllVendorsAsync(string? status = null, string? search = null)
     {
         var q = _context.Vendors.Include(v => v.Documents)
-                                        .Include(c => c.Category).AsQueryable();
+            .Include(c => c.Category).AsQueryable();
         if (!string.IsNullOrEmpty(status)) q = q.Where(v => v.Status == status);
-        if (!string.IsNullOrEmpty(search)) q = q.Where(v => v.VendorName.Contains(search) || v.CompanyName.Contains(search));
+        if (!string.IsNullOrEmpty(search))
+            q = q.Where(v => v.VendorName.Contains(search) || v.CompanyName.Contains(search));
         return await q.OrderByDescending(v => v.CreatedAt)
-                     .Select(v => _mapper.Map<VendorResponseDto>(v))
-                     .ToListAsync();
+            .Select(v => _mapper.Map<VendorResponseDto>(v))
+            .ToListAsync();
     }
 
     public async Task<bool> UpdateVendorStatusAsync(Guid id, string status)
@@ -80,30 +89,46 @@ public class VendorService : IVendorService
         return true;
     }
 
-    public async Task<VendorDocument> UploadVendorDocumentAsync(Guid vendorId, IFormFile file, Guid uploadedBy)
+    public async Task<VendorDocument> UploadVendorDocumentAsync(
+        Guid vendorId,
+        IFormFile file,
+        Guid uploadedBy)
     {
         var vendor = await _context.Vendors.FindAsync(vendorId);
-        if (vendor == null) throw new Exception("Vendor not found");
+        if (vendor == null)
+            throw new Exception("Vendor not found");
 
-        // Upload to Cloudinary
-        using var stream = file.OpenReadStream();
-        var uploadParams = new ImageUploadParams
+        var FileUrl = $"{vendorId}/{Guid.NewGuid()}_{file.FileName}";
+
+        byte[] fileBytes;
+        using (var ms = new MemoryStream())
         {
-            File = new FileDescription(file.FileName, stream),
-            Folder = "nexusprocure/vendors"
-        };
-        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-        if (uploadResult.StatusCode != System.Net.HttpStatusCode.OK)
-            throw new Exception("Upload failed");
+            await file.CopyToAsync(ms);
+            fileBytes = ms.ToArray();
+        }
+
+        var response = await _supabase.Storage
+            .From("vendor-documents")
+            .Upload(
+                fileBytes,
+                FileUrl,
+                new FileOptions
+                {
+                    ContentType = file.ContentType,
+                    Upsert = false
+                });
+
+        if (response == null)
+            throw new Exception("File upload failed");
 
         var doc = new VendorDocument
         {
-            VendorId = vendor.Id,
-            FileUrl = uploadResult.SecureUrl.ToString(),
+            VendorId = vendorId,
+            FileUrl = FileUrl,
             FileName = file.FileName,
             FileType = file.ContentType,
-            PublicId = uploadResult.PublicId,
-            UploadedBy = uploadedBy
+            UploadedBy = uploadedBy,
+            CreatedAt = DateTime.UtcNow
         };
 
         _context.VendorDocuments.Add(doc);
@@ -116,14 +141,26 @@ public class VendorService : IVendorService
         var doc = await _context.VendorDocuments.FindAsync(documentId);
         if (doc == null) return false;
 
-        if (!string.IsNullOrEmpty(doc.PublicId))
-        {
-            var deletionParams = new DeletionParams(doc.PublicId);
-            await _cloudinary.DestroyAsync(deletionParams);
-        }
+        await _supabase.Storage
+            .From("vendor-documents")
+            .Remove(new List<string> { doc.FileUrl });
 
         _context.VendorDocuments.Remove(doc);
         await _context.SaveChangesAsync();
         return true;
     }
+    
+    public async Task<(byte[] Data, string ContentType, string FileName)> DownloadVendorDocumentAsync(Guid documentId)
+    {
+        var doc = await _context.VendorDocuments.FindAsync(documentId);
+        if (doc == null)
+            throw new Exception("Document not found");
+
+        var data = await _supabase.Storage
+            .From("vendor-documents")
+            .Download(doc.FileUrl, (TransformOptions?)null);
+
+        return (data, doc.FileType, doc.FileName);
+    }
+
 }

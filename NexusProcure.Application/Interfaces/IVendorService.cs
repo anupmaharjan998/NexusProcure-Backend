@@ -14,4 +14,5 @@ public interface IVendorService
     Task<bool> UpdateVendorStatusAsync(Guid id, string status);
     Task<VendorDocument> UploadVendorDocumentAsync(Guid vendorId, IFormFile file, Guid uploadedBy);
     Task<bool> DeleteVendorDocumentAsync(Guid documentId);
+    Task<(byte[] Data, string ContentType, string FileName)> DownloadVendorDocumentAsync(Guid documentId);
 }
