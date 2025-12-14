@@ -57,6 +57,7 @@ public class VendorService : IVendorService
     public async Task<VendorResponseDto?> GetVendorByIdAsync(Guid id)
     {
         var vendor = await _context.Vendors
+        .Include(c => c.Category)
             .Include(v => v.Documents)
             .AsNoTracking()
             .FirstOrDefaultAsync(v => v.Id == id);
