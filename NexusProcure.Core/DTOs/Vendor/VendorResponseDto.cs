@@ -23,7 +23,7 @@ public class VendorResponseDto
     public string? BankAccount { get; set; }
     
     public PaymentTerm PaymentTerms { get; set; }
-    public List<string>? Documents { get; set; }
+    public List<VendorDocumentResponseDto>? Documents { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

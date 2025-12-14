@@ -10,13 +10,11 @@ namespace NexusProcure.Api.Controllers;
 
 public class VendorsController : BaseApiController
 {
-    private readonly IVendorService _service;
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IVendorService _vendorService;
 
-    public VendorsController(IVendorService service, IHttpContextAccessor httpContextAccessor)
+    public VendorsController(IVendorService vendorService)
     {
-        _service = service;
-        _httpContextAccessor = httpContextAccessor;
+        _vendorService = vendorService;
     }
 
     // CREATE VENDOR
@@ -24,7 +22,7 @@ public class VendorsController : BaseApiController
     [Authorize(Policy = "ADD_VENDOR")]
     public async Task<IActionResult> Create([FromBody] VendorRequestDto dto)
     {
-        var created = await _service.CreateVendorAsync(dto);
+        var created = await _vendorService.CreateVendorAsync(dto);
         return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
     }
 
@@ -33,7 +31,7 @@ public class VendorsController : BaseApiController
     [Authorize(Policy = "EDIT_VENDOR")]
     public async Task<IActionResult> Update(Guid id, VendorRequestDto dto)
     {
-        var updated = await _service.UpdateVendorAsync(id, dto);
+        var updated = await _vendorService.UpdateVendorAsync(id, dto);
         if (updated == null) return NotFound();
         return Ok(updated);
     }
@@ -43,7 +41,7 @@ public class VendorsController : BaseApiController
     [Authorize(Policy = "VIEW_VENDOR")]
     public async Task<IActionResult> Get(Guid id)
     {
-        var v = await _service.GetVendorByIdAsync(id);
+        var v = await _vendorService.GetVendorByIdAsync(id);
         if (v == null) return NotFound();
         return Ok(v);
     }
@@ -53,7 +51,7 @@ public class VendorsController : BaseApiController
     [Authorize(Policy = "VIEW_VENDOR")]
     public async Task<IActionResult> List([FromQuery] string? status, [FromQuery] string? search)
     {
-        var list = await _service.GetAllVendorsAsync(status, search);
+        var list = await _vendorService.GetAllVendorsAsync(status, search);
         return Ok(list);
     }
 
@@ -62,7 +60,7 @@ public class VendorsController : BaseApiController
     [Authorize(Policy = "APPROVE_VENDOR")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] string status)
     {
-        var ok = await _service.UpdateVendorStatusAsync(id, status);
+        var ok = await _vendorService.UpdateVendorStatusAsync(id, status);
         if (!ok) return NotFound();
         return Ok();
     }
@@ -72,7 +70,7 @@ public class VendorsController : BaseApiController
     [Authorize(Policy = "DELETE_VENDOR")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var ok = await _service.DeleteVendorAsync(id);
+        var ok = await _vendorService.DeleteVendorAsync(id);
         if (!ok) return NotFound();
         return NoContent();
     }
@@ -84,7 +82,7 @@ public class VendorsController : BaseApiController
     public async Task<IActionResult> UploadDocument(Guid id,[FromForm]  IFormFile file)
     {
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
-        var doc = await _service.UploadVendorDocumentAsync(id, file, userId);
+        var doc = await _vendorService.UploadVendorDocumentAsync(id, file, userId);
         return Ok(new { documentId = doc.Id, url = doc.FileUrl, fileName = doc.FileName });
     }
 
@@ -93,7 +91,7 @@ public class VendorsController : BaseApiController
     [Authorize(Policy = "DELETE_VENDOR_DOCUMENT")]
     public async Task<IActionResult> DeleteDocument(Guid docId)
     {
-        var ok = await _service.DeleteVendorDocumentAsync(docId);
+        var ok = await _vendorService.DeleteVendorDocumentAsync(docId);
         if (!ok) return NotFound();
         return NoContent();
     }
@@ -113,5 +111,13 @@ public class VendorsController : BaseApiController
             .ToList();
 
         return Ok(paymentTerms);
+    }
+    
+    [HttpGet("{id}/download-vendor-document")]
+    [Authorize]
+    public async Task<IActionResult> Download(Guid id)
+    {
+        var result = await _vendorService.DownloadVendorDocumentAsync(id);
+        return File(result.Data, result.ContentType, result.FileName);
     }
 }
