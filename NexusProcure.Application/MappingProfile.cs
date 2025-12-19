@@ -61,6 +61,7 @@ public class MappingProfile : Profile
         //CreateMap<CreateRoleDto, Role>();
         
         
-        CreateMap<ApprovalLevel, ApprovalLevelResponseDto>();
+        CreateMap<ApprovalLevel, ApprovalLevelResponseDto>()
+            .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name));
     }
 }

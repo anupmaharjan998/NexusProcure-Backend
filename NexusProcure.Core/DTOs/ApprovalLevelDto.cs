@@ -8,6 +8,7 @@ public class ApprovalLevelResponseDto
     public decimal MaxAmount { get; set; }
 
     public Guid RoleId { get; set; }
+    public string RoleName { get; set; }
 }
 
 public class ApprovalLeveRequestlDto

@@ -26,4 +26,25 @@ public class ApprovalLevelController : BaseApiController
         var levels = await _approvalLevelService.GetAllAsync();
         return Ok(levels);
     }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var role = await _approvalLevelService.GetByIdAsync(id);
+        return role == null ? NotFound() : Ok(role);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, ApprovalLeveRequestlDto dto)
+    {
+        var updated = await _approvalLevelService.UpdateAsync(id, dto);
+        return updated == null ? NotFound() : Ok(updated);
+    }
+    
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var result = await _approvalLevelService.DeleteAsync(id);
+        return result ? NoContent() : NotFound();
+    }
 }
