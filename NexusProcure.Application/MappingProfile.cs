@@ -52,7 +52,11 @@ public class MappingProfile : Profile
 // Requisition -> RequisitionResponseDto
         CreateMap<Requisition, RequisitionResponseDto>()
             .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items))
-            .ForMember(dest => dest.RequestedByName, opt => opt.MapFrom(src => src.RequestedBy.FullName));
+            .ForMember(dest => dest.RequestedByName, opt => opt.MapFrom(src => src.RequestedBy.FullName))
+            .ForMember(
+                dest => dest.TotalAmount,
+                opt => opt.MapFrom(src => src.Items.Sum(i => i.EstimatedCost))
+            );
         
         CreateMap<User, UserResponseDto>();
 

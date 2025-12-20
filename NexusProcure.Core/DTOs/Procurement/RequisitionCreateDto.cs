@@ -22,6 +22,8 @@ public class RequisitionResponseDto
     public Guid Id { get; set; }
     public Guid RequestedById { get; set; }
     public UserResponseDto RequestedBy { get; set; }
+    
+    public decimal TotalAmount { get; set; }
     public string RequestedByName { get; set; }
 
     public DateTime RequestedDate { get; set; }
