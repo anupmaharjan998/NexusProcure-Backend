@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using NexusProcure.Application.Services.Procurement;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.DTOs.Procurement;
 using NexusProcure.Core.DTOs.Vendor;
@@ -63,5 +64,8 @@ public class MappingProfile : Profile
         
         CreateMap<ApprovalLevel, ApprovalLevelResponseDto>()
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name));
+        
+        
+        CreateMap<Approval, ApprovalDto>();
     }
 }

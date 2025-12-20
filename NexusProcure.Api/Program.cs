@@ -145,6 +145,7 @@ builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IApprovalLevelService, ApprovalLevelService>();
+builder.Services.AddScoped<IRequisitionApprovalService, RequisitionApprovalService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));

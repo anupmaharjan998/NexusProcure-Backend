@@ -11,3 +11,12 @@ public class ApprovalDto
     public string Decision { get; set; } 
     public string Comments { get; set; }
 }
+
+
+public class ApprovalRequestDto
+{
+    public Guid ApproverId { get; set; }
+    public Guid RoleId { get; set; }
+    public string Decision { get; set; } = "Approved";
+    public string Comments { get; set; } = string.Empty;
+}

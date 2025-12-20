@@ -27,7 +27,7 @@ public class ApprovalLevelController : BaseApiController
         return Ok(levels);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("geyById/{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var role = await _approvalLevelService.GetByIdAsync(id);
