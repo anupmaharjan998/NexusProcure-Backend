@@ -34,6 +34,7 @@ public class RequisitionService : IRequisitionService
         public async Task<RequisitionResponseDto> GetByIdAsync(Guid id)
         {
             var requisition = await _context.Requisitions
+                .Include(r => r.RequestedBy)
                 .Include(r => r.Items)
                 .Include(r => r.Approvals)
                 .Include(r => r.PurchaseOrders)

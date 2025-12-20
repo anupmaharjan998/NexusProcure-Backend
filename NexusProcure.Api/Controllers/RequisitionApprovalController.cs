@@ -26,7 +26,9 @@ public class RequisitionApprovalController : BaseApiController
     {
         try
         {
-            await _approvalService.ApproveRequisitionAsync(id, dto.ApproverId, dto.RoleId, dto.Decision, dto.Comments);
+            var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+            dto.ApproverId = userId;
+            await _approvalService.ApproveRequisitionAsync(id, dto.ApproverId, dto.Decision, dto.Comments);
             return Ok(new { message = "Approval recorded successfully" });
         }
         catch (Exception ex)

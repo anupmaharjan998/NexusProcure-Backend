@@ -16,7 +16,6 @@ public class ApprovalDto
 public class ApprovalRequestDto
 {
     public Guid ApproverId { get; set; }
-    public Guid RoleId { get; set; }
     public string Decision { get; set; } = "Approved";
     public string Comments { get; set; } = string.Empty;
 }
