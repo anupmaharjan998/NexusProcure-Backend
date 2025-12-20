@@ -52,7 +52,7 @@ public class MappingProfile : Profile
 // Requisition -> RequisitionResponseDto
         CreateMap<Requisition, RequisitionResponseDto>()
             .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items))
-            .ForMember(dest => dest.RequestedBy, opt => opt.MapFrom(src => src.RequestedBy));
+            .ForMember(dest => dest.RequestedByName, opt => opt.MapFrom(src => src.RequestedBy.FullName));
         
         CreateMap<User, UserResponseDto>();
 

@@ -22,6 +22,7 @@ public class RequisitionResponseDto
     public Guid Id { get; set; }
     public Guid RequestedById { get; set; }
     public UserResponseDto RequestedBy { get; set; }
+    public string RequestedByName { get; set; }
 
     public DateTime RequestedDate { get; set; }
     public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected
