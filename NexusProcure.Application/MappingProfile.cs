@@ -51,7 +51,11 @@ public class MappingProfile : Profile
 
 // Requisition -> RequisitionResponseDto
         CreateMap<Requisition, RequisitionResponseDto>()
-            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
+            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items))
+            .ForMember(dest => dest.RequestedBy, opt => opt.MapFrom(src => src.RequestedBy));
+        
+        CreateMap<User, UserResponseDto>();
+
 
 // Optionally, also map nested PurchaseOrderItem if needed
         // CreateMap<PurchaseOrder, PurchaseOrderDto>()

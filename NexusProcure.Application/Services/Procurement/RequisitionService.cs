@@ -21,6 +21,7 @@ public class RequisitionService : IRequisitionService
         public async Task<IEnumerable<RequisitionResponseDto>> GetAllAsync()
         {
             var requisitions = await _context.Requisitions
+                .Include(r => r.RequestedBy)
                 .Include(r => r.Items)
                 .Include(r => r.Approvals)
                 .Include(r => r.PurchaseOrders)
