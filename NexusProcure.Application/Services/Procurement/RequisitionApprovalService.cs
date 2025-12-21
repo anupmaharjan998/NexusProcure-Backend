@@ -134,12 +134,22 @@ namespace NexusProcure.Application.Services.Procurement
         {
             var userRoleId =
                 await _context.Users.Where(u => u.Id == userId).Select(x => x.RoleId).FirstOrDefaultAsync();
+            // var requisitions = await _context.Requisitions
+            //     .Include(r => r.Items)
+            //     .Include(r => r.Approvals)
+            //     .ThenInclude(a => a.ApprovedBy)
+            //     .Where(r => r.Status == "Pending" || r.Status == "Partial Approved")
+            //     .ToListAsync();
+            
             var requisitions = await _context.Requisitions
-                .Include(r => r.Items)
-                .Include(r => r.Approvals)
-                .ThenInclude(a => a.ApprovedBy)
-                .Where(r => r.Status == "Pending" || r.Status == "Partial Approved")
-                .ToListAsync();
+                            .Include(r => r.RequestedBy)
+                            .Include(r => r.Items)
+                            .Include(r => r.Approvals)
+                            .ThenInclude(a => a.ApprovedBy)
+                            .Include(r => r.PurchaseOrders)
+                            .ThenInclude(po => po.Items)
+                            .Where(s => s.Status != "Approved" && s.Status != "Rejected")
+                            .ToListAsync();
 
             var pendingForRole = new List<Requisition>();
 
