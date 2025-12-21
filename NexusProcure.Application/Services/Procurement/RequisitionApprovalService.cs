@@ -19,83 +19,92 @@ namespace NexusProcure.Application.Services.Procurement
             _mapper = mapper;
         }
 
-        public async Task ApproveRequisitionAsync(Guid requisitionId, Guid approverId, string decision, string comments)
-{
-    using var transaction = await _context.Database.BeginTransactionAsync();
-    try
-    {
-        // Get user's role
-        var userRoleId = await _context.Users
-            .Where(u => u.Id == approverId)
-            .Select(u => u.RoleId)
-            .FirstOrDefaultAsync();
-
-        // Load requisition with items and approvals
-        var requisition = await _context.Requisitions
-            .Include(r => r.Items)
-            .Include(r => r.Approvals)
-                .ThenInclude(a => a.ApprovedBy)
-            .FirstOrDefaultAsync(r => r.Id == requisitionId);
-
-        if (requisition == null)
-            throw new KeyNotFoundException("Requisition not found");
-
-        var totalAmount = requisition.Items.Sum(i => i.EstimatedCost);
-
-        // Determine required approval levels for this amount
-        var requiredLevels = await GetRequiredLevelsAsync(totalAmount);
-
-        // Get the next required level that hasn't approved yet
-        var nextLevel = requiredLevels
-            .Where(l => !requisition.Approvals.Any(a => a.ApprovedBy.RoleId == l.RoleId))
-            .FirstOrDefault();
-
-        if (nextLevel == null)
-            throw new InvalidOperationException("Requisition is already fully approved");
-
-        if (nextLevel.RoleId != userRoleId)
-            throw new UnauthorizedAccessException("You are not authorized to approve this requisition at this level");
-
-        // Create new approval record
-        var approval = new Approval
+        public async Task ApproveRequisitionAsync(
+            Guid requisitionId,
+            Guid approverId,
+            string decision,
+            string comments)
         {
-            Id = Guid.NewGuid(),
-            RequisitionId = requisitionId,
-            ApprovedById = approverId,
-            ApprovedDate = DateTime.UtcNow,
-            Decision = decision,
-            Comments = comments
-        };
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-        _context.Approvals.Add(approval); // Ensure EF tracks it
-        requisition.Approvals.Add(approval); // Optional: keep in-memory list updated
+            try
+            {
+                var user = await _context.Users
+                    .Where(u => u.Id == approverId)
+                    .Select(u => new { u.Id, u.RoleId })
+                    .FirstOrDefaultAsync();
 
-        // Update requisition status
-        if (decision == "Rejected")
-        {
-            requisition.Status = "Rejected";
+                if (user == null)
+                    throw new UnauthorizedAccessException("Invalid approver");
+
+                var requisition = await _context.Requisitions
+                    .Include(r => r.Items)
+                    .Include(r => r.Approvals)
+                    .FirstOrDefaultAsync(r => r.Id == requisitionId);
+
+                if (requisition == null)
+                    throw new KeyNotFoundException("Requisition not found");
+
+                var totalAmount = requisition.Items.Sum(i => i.EstimatedCost);
+                var requiredLevels = await GetRequiredLevelsAsync(totalAmount);
+
+                // Resolve roleIds that already approved
+                var approvedRoleIds = await _context.Approvals
+                    .Where(a => a.RequisitionId == requisitionId)
+                    .Join(
+                        _context.Users,
+                        a => a.ApprovedById,
+                        u => u.Id,
+                        (a, u) => u.RoleId
+                    )
+                    .ToListAsync();
+
+                var nextLevel = requiredLevels
+                    .FirstOrDefault(l => !approvedRoleIds.Contains(l.RoleId));
+
+                if (nextLevel == null)
+                    throw new InvalidOperationException("Requisition already fully approved");
+
+                if (nextLevel.RoleId != user.RoleId)
+                    throw new UnauthorizedAccessException("You are not authorized for this approval level");
+
+                var approval = new Approval
+                {
+                    Id = Guid.NewGuid(),
+                    RequisitionId = requisitionId,
+                    ApprovedById = approverId,
+                    ApprovedDate = DateTime.UtcNow,
+                    Decision = decision,
+                    Comments = comments
+                };
+
+                _context.Approvals.Add(approval);
+
+                if (decision == "Rejected")
+                {
+                    requisition.Status = "Rejected";
+                }
+                else
+                {
+                    approvedRoleIds.Add(user.RoleId);
+
+                    var remainingLevels = requiredLevels
+                        .Any(l => !approvedRoleIds.Contains(l.RoleId));
+
+                    requisition.Status = remainingLevels
+                        ? "Partial Approved"
+                        : "Approved";
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
-        else if (decision == "Approved")
-        {
-            // Check if there are any remaining levels
-            var remainingLevels = requiredLevels
-                .Where(l => !requisition.Approvals.Any(a => a.ApprovedBy.RoleId == l.RoleId))
-                .ToList();
-
-            requisition.Status = remainingLevels.Any() ? "Partial Approved" : "Approved";
-        }
-
-        // Save changes and commit transaction
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
-    }
-    catch
-    {
-        await transaction.RollbackAsync();
-        throw;
-    }
-}
-
 
 
         public async Task<List<ApprovalLevelResponseDto>> GetRequiredLevelsAsync(decimal amount)

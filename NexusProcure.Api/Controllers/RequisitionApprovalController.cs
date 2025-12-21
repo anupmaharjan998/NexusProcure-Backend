@@ -1,10 +1,12 @@
 ﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Application.Services.Procurement;
 
 namespace NexusProcure.Api.Controllers;
-
+    
+[Authorize]
 public class RequisitionApprovalController : BaseApiController
 {
     private readonly IRequisitionApprovalService _approvalService;
