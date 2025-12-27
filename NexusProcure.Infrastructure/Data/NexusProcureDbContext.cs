@@ -20,6 +20,8 @@ public class NexusProcureDbContext : DbContext
     public DbSet<RequisitionItem> RequisitionItems { get; set; }
     public DbSet<Approval> Approvals { get; set; }
     public DbSet<ApprovalLevel> ApprovalLevels { get; set; }
+    public DbSet<ApprovalPolicy> ApprovalPolicies { get; set; }
+
 
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
     public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; }

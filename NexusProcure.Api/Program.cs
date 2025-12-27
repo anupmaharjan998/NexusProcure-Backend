@@ -146,6 +146,7 @@ builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IApprovalLevelService, ApprovalLevelService>();
 builder.Services.AddScoped<IRequisitionApprovalService, RequisitionApprovalService>();
+builder.Services.AddScoped<IApprovalPolicyService, ApprovalPolicyService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
@@ -178,7 +179,7 @@ builder.Services.AddScoped<HangfireJobLoggingFilter>();
 // builder.Services.AddHangfireServer();
 
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionHangFire");
 
 if (!string.IsNullOrEmpty(connectionString))
 {

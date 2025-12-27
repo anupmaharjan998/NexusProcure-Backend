@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.DTOs.Procurement;
@@ -12,11 +13,13 @@ namespace NexusProcure.Application.Services.Procurement
     {
         private readonly NexusProcureDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IApprovalPolicyService _approvalPolicyService;
 
-        public RequisitionApprovalService(NexusProcureDbContext context, IMapper mapper)
+        public RequisitionApprovalService(NexusProcureDbContext context, IMapper mapper, IApprovalPolicyService approvalPolicyService )
         {
             _context = context;
             _mapper = mapper;
+            _approvalPolicyService = approvalPolicyService;
         }
 
         public async Task ApproveRequisitionAsync(
@@ -39,6 +42,7 @@ namespace NexusProcure.Application.Services.Procurement
 
                 var requisition = await _context.Requisitions
                     .Include(r => r.Items)
+                    .Include(r => r.Category)
                     .Include(r => r.Approvals)
                     .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
@@ -46,8 +50,8 @@ namespace NexusProcure.Application.Services.Procurement
                     throw new KeyNotFoundException("Requisition not found");
 
                 var totalAmount = requisition.Items.Sum(i => i.EstimatedCost);
-                var requiredLevels = await GetRequiredLevelsAsync(totalAmount);
-
+                // var requiredLevels = await GetRequiredLevelsAsync(totalAmount);
+                var requiredLevels = await _approvalPolicyService.ResolveApprovalFlowAsync(requisition.CategoryId, totalAmount);
                 // Resolve roleIds that already approved
                 var approvedRoleIds = await _context.Approvals
                     .Where(a => a.RequisitionId == requisitionId)
@@ -107,6 +111,7 @@ namespace NexusProcure.Application.Services.Procurement
         }
 
 
+        [Obsolete("Replaced by ApprovalPolicyService")]
         public async Task<List<ApprovalLevelResponseDto>> GetRequiredLevelsAsync(decimal amount)
         {
             var approvals = await _context.ApprovalLevels
@@ -143,6 +148,7 @@ namespace NexusProcure.Application.Services.Procurement
             
             var requisitions = await _context.Requisitions
                             .Include(r => r.RequestedBy)
+                            .Include(r => r.Category)
                             .Include(r => r.Items)
                             .Include(r => r.Approvals)
                             .ThenInclude(a => a.ApprovedBy)
@@ -156,7 +162,8 @@ namespace NexusProcure.Application.Services.Procurement
             foreach (var r in requisitions)
             {
                 var totalAmount = r.Items.Sum(i => i.EstimatedCost);
-                var requiredLevels = await GetRequiredLevelsAsync(totalAmount);
+                //var requiredLevels = await GetRequiredLevelsAsync(totalAmount);
+                var requiredLevels = await _approvalPolicyService.ResolveApprovalFlowAsync(r.CategoryId, totalAmount);
 
                 // var nextLevel = requiredLevels
                 //     .Where(l => !r.Approvals.Any(a => a.ApprovedBy.RoleId == l.RoleId))

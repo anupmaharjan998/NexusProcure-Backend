@@ -9,6 +9,10 @@ public class Requisition
     public DateTime RequestedDate { get; set; }
     public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected
 
+    public Guid CategoryId { get; set; }
+    public Category Category { get; set; }
+    
+
     // Navigation
     public ICollection<RequisitionItem> Items { get; set; } = new List<RequisitionItem>();
     public ICollection<Approval> Approvals { get; set; } = new List<Approval>();
