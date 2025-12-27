@@ -166,16 +166,32 @@ builder.Services.AddScoped<IEmailJobService, EmailJobService>();
 builder.Services.AddScoped<HangfireJobLoggingFilter>();
 
 // Register Hangfire with PostgreSQL storage
-builder.Services.AddHangfire(config =>
+// builder.Services.AddHangfire(config =>
+// {
+//     config.UseSimpleAssemblyNameTypeSerializer()
+//         .UseRecommendedSerializerSettings()
+//         .UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
+// });
+//
+//
+// // Start Hangfire server
+// builder.Services.AddHangfireServer();
+
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (!string.IsNullOrEmpty(connectionString))
 {
-    config.UseSimpleAssemblyNameTypeSerializer()
-        .UseRecommendedSerializerSettings()
-        .UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+    builder.Services.AddHangfire(config =>
+    {
+        config.UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UsePostgreSqlStorage(connectionString);
+    });
 
+    builder.Services.AddHangfireServer();
+}
 
-// Start Hangfire server
-builder.Services.AddHangfireServer();
 
 
 
