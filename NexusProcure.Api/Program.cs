@@ -146,6 +146,9 @@ builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddScoped<IRequisitionService, RequisitionService>();
 builder.Services.AddScoped<IApprovalLevelService, ApprovalLevelService>();
 builder.Services.AddScoped<IRequisitionApprovalService, RequisitionApprovalService>();
+builder.Services.AddScoped<IApprovalPolicyService, ApprovalPolicyService>();
+builder.Services.AddScoped<IRiskScoringService, RiskScoringService>();
+builder.Services.AddScoped<IDelegationService, DelegationService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
@@ -163,6 +166,8 @@ builder.Services.AddHttpContextAccessor();
 
 // Register background email job service
 builder.Services.AddScoped<IEmailJobService, EmailJobService>();
+builder.Services.AddScoped<IApprovalEscalationJob, ApprovalEscalationJob>();
+
 builder.Services.AddScoped<HangfireJobLoggingFilter>();
 
 // Register Hangfire with PostgreSQL storage
@@ -178,7 +183,7 @@ builder.Services.AddScoped<HangfireJobLoggingFilter>();
 // builder.Services.AddHangfireServer();
 
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionHangFire");
 
 if (!string.IsNullOrEmpty(connectionString))
 {
@@ -209,6 +214,12 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
         new HangfireBasicAuthFilter("admin", "Admin@123")
     }
 });
+
+RecurringJob.AddOrUpdate<IApprovalEscalationJob>(
+    "approval-escalation-job",
+    job => job.RunAsync(),
+    Cron.Hourly
+);
 
 
 // Swagger

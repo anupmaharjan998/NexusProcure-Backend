@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Core.DTOs.Procurement;
 using NexusProcure.Core.Entities;
@@ -11,11 +12,15 @@ public class RequisitionService : IRequisitionService
     {
         private readonly NexusProcureDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IRiskScoringService _riskScoringService;
+        private readonly IApprovalPolicyService _approvalPolicyService;
 
-        public RequisitionService(NexusProcureDbContext context,  IMapper mapper)
+        public RequisitionService(NexusProcureDbContext context,  IMapper mapper, IRiskScoringService riskScoringService, IApprovalPolicyService approvalPolicyService)
         {
             _context = context;
             _mapper = mapper;
+            _riskScoringService = riskScoringService;
+            _approvalPolicyService = approvalPolicyService;
         }
 
         public async Task<IEnumerable<RequisitionResponseDto>> GetAllAsync()
@@ -47,27 +52,78 @@ public class RequisitionService : IRequisitionService
         }
 
         public async Task<RequisitionResponseDto> CreateAsync(RequisitionCreateDto dto)
+{
+    await using var transaction = await _context.Database.BeginTransactionAsync();
+
+    try
+    {
+        var requisition = new Requisition
         {
-            var requisition = new Requisition
+            Id = Guid.NewGuid(),
+            RequestedById = dto.RequestedById,
+            RequestedDate = DateTime.UtcNow,
+            Status = "Pending",
+            CategoryId = dto.CategoryId,
+            IsUrgent = dto.IsUrgent,
+            Items = dto.Items.Select(item => new RequisitionItem
             {
                 Id = Guid.NewGuid(),
-                RequestedById = dto.RequestedById,
-                RequestedDate = DateTime.UtcNow,
-                Status = "Pending",
-                Items = dto.Items.Select(item => new RequisitionItem
-                {
-                    Id = Guid.NewGuid(),
-                    ItemName = item.ItemName,
-                    Quantity = item.Quantity,
-                    EstimatedCost = item.EstimatedCost
-                }).ToList()
-            };
+                ItemName = item.ItemName,
+                Quantity = item.Quantity,
+                EstimatedCost = item.EstimatedCost
+            }).ToList()
+        };
 
-            await _context.Requisitions.AddAsync(requisition);
-            await _context.SaveChangesAsync();
+        // 🔹 Risk scoring
+        var riskScore = await _riskScoringService.CalculateRiskScoreAsync(requisition);
+        requisition.RiskScore = riskScore;
+        requisition.RiskLevel = _riskScoringService.ResolveRiskLevel(riskScore);
 
-            return _mapper.Map<RequisitionResponseDto>(requisition);
-        }
+        await _context.Requisitions.AddAsync(requisition);
+        await _context.SaveChangesAsync();
+
+        // 🔹 Resolve approval flow
+        var approvalLevels =
+            await _approvalPolicyService.ResolveApprovalFlowAsync(requisition.Id);
+
+        if (!approvalLevels.Any())
+            throw new InvalidOperationException("No approval policy configured");
+
+        var firstLevel = approvalLevels.First();
+
+        // 🔹 Assign first approver (role → user)
+        var approverUserId = await _context.Users
+            .Where(u => u.RoleId == firstLevel.RoleId)
+            .Select(u => u.Id)
+            .FirstOrDefaultAsync();
+
+        if (approverUserId == Guid.Empty)
+            throw new InvalidOperationException("No approver found for role");
+
+        var approval = new Approval
+        {
+            Id = Guid.NewGuid(),
+            RequisitionId = requisition.Id,
+            ApprovalLevelId = firstLevel.Id,
+            AssignedToUserId = approverUserId,
+            AssignedAt = DateTime.UtcNow,
+            Status = "Pending"
+        };
+
+        await _context.Approvals.AddAsync(approval);
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+
+        return _mapper.Map<RequisitionResponseDto>(requisition);
+    }
+    catch
+    {
+        await transaction.RollbackAsync();
+        throw;
+    }
+}
+
 
 
         public async Task<RequisitionResponseDto> ApproveAsync(Guid requisitionId, Guid approvedById, string comments)
@@ -90,8 +146,6 @@ public class RequisitionService : IRequisitionService
                 Id = Guid.NewGuid(),
                 RequisitionId = requisitionId,
                 ApprovedById = approvedById,
-                ApprovedDate = DateTime.UtcNow,
-                Decision = "Approved",
                 Comments = comments
             };
 
@@ -124,8 +178,6 @@ public class RequisitionService : IRequisitionService
                 Id = Guid.NewGuid(),
                 RequisitionId = requisitionId,
                 ApprovedById = rejectedById,
-                ApprovedDate = DateTime.UtcNow,
-                Decision = "Rejected",
                 Comments = comments
             };
 

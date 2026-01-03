@@ -24,8 +24,6 @@ public class ApprovalLevelService : IApprovalLevelService
         {
             Id = Guid.NewGuid(),
             LevelName = dto.LevelName,
-            MinAmount = dto.MinAmount,
-            MaxAmount = dto.MaxAmount,
             RoleId = dto.RoleId
         };
 
@@ -57,8 +55,6 @@ public class ApprovalLevelService : IApprovalLevelService
         if (res == null) return null;
         
         if (!string.IsNullOrEmpty(dto.LevelName)) res.LevelName = dto.LevelName;
-        res.MaxAmount = dto.MaxAmount;
-        res.MinAmount = dto.MinAmount;
         res.RoleId = dto.RoleId;
         await _context.SaveChangesAsync();
 
