@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.Entities;
 using NexusProcure.Infrastructure.Data.Seeds;
 
@@ -37,6 +38,7 @@ public class NexusProcureDbContext : DbContext
     public DbSet<RolePermission> RolePermissions { get; set; }
     
     public DbSet<Category> Categories { get; set; }
+    public DbSet<ApprovalDelegation> ApprovalDelegations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

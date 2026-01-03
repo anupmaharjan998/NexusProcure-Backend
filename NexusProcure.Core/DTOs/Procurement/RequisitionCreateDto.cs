@@ -5,6 +5,8 @@ namespace NexusProcure.Core.DTOs.Procurement;
 public class RequisitionCreateDto
 {
     public Guid RequestedById { get; set; }
+    public Guid CategoryId { get; set; }   // ✅ ADD
+    public bool IsUrgent { get; set; }      // ✅ ADD
     public List<RequisitionItemDto> Items { get; set; } = new List<RequisitionItemDto>();
 }
 

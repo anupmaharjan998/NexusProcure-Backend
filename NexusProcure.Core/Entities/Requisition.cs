@@ -12,6 +12,11 @@ public class Requisition
     public Guid CategoryId { get; set; }
     public Category Category { get; set; }
     
+    public int RiskScore { get; set; }
+    public string RiskLevel { get; set; } // Low, Medium, High
+    
+    public bool IsUrgent { get; set; } 
+    
 
     // Navigation
     public ICollection<RequisitionItem> Items { get; set; } = new List<RequisitionItem>();
