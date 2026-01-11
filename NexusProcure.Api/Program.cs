@@ -14,11 +14,14 @@ using NexusProcure.Api.hangfire;
 using NexusProcure.Application;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Interfaces.BackgroundJobs;
+using NexusProcure.Application.Interfaces.Helper;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Application.Models;
 using NexusProcure.Application.Services;
 using NexusProcure.Application.Services.BackgroundJobs;
+using NexusProcure.Application.Services.Helper;
 using NexusProcure.Application.Services.Procurement;
+using NexusProcure.Core.DTOs;
 using NexusProcure.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -133,6 +136,9 @@ builder.Services.AddSingleton(provider =>
     return new Supabase.Client(url, key);
 });
 
+builder.Services.Configure<RiskScoringOptions>(
+    builder.Configuration.GetSection("RiskScoring"));
+
 // Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -149,6 +155,8 @@ builder.Services.AddScoped<IRequisitionApprovalService, RequisitionApprovalServi
 builder.Services.AddScoped<IApprovalPolicyService, ApprovalPolicyService>();
 builder.Services.AddScoped<IRiskScoringService, RiskScoringService>();
 builder.Services.AddScoped<IDelegationService, DelegationService>();
+builder.Services.AddScoped<ITotalAmountRiskScoreService, TotalAmountRiskScoreService>();
+builder.Services.AddScoped<IRequisitionNumberGenerator, RequisitionNumberGenerator>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));

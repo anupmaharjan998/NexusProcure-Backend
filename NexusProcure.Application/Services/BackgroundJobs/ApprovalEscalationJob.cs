@@ -22,7 +22,7 @@ public class ApprovalEscalationJob : IApprovalEscalationJob
 
         var pendingApprovals = await _context.Approvals
             .Include(a => a.Requisition)
-            .Include(a => a.ApprovalLevel)
+            .Include(a => a.Role)
             .Where(a =>
                 a.Status == "Pending" &&
                 !a.Escalated)
@@ -32,7 +32,7 @@ public class ApprovalEscalationJob : IApprovalEscalationJob
         {
             var policy = await _context.ApprovalPolicies
                 .FirstOrDefaultAsync(p =>
-                    p.ApprovalLevelId == approval.ApprovalLevelId &&
+                    p.RoleId == approval.RoleId &&
                     p.CategoryId == approval.Requisition.CategoryId &&
                     p.IsActive);
 
@@ -63,7 +63,7 @@ public class ApprovalEscalationJob : IApprovalEscalationJob
 
             // 🔹 Assign new approval task
             var nextApproverUserId = await _context.Users
-                .Where(u => u.RoleId == nextPolicy.ApprovalLevel.RoleId)
+                .Where(u => u.RoleId == nextPolicy.RoleId)
                 .Select(u => u.Id)
                 .FirstOrDefaultAsync();
 
@@ -74,14 +74,14 @@ public class ApprovalEscalationJob : IApprovalEscalationJob
             {
                 Id = Guid.NewGuid(),
                 RequisitionId = approval.RequisitionId,
-                ApprovalLevelId = nextPolicy.ApprovalLevelId,
-                AssignedToUserId = nextApproverUserId,
+                RoleId = nextPolicy.RoleId,
+                //AssignedToUserId = nextApproverUserId,
                 AssignedAt = now,
                 Status = "Pending"
             };
 
             _context.Approvals.Add(escalatedApproval);
-            await _emailJobService.SendEscalationNotificationAsync(escalatedApproval.Id);
+            //await _emailJobService.SendEscalationNotificationAsync(escalatedApproval.Id);
         }
 
         await _context.SaveChangesAsync();

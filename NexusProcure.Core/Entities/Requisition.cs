@@ -1,8 +1,11 @@
-﻿namespace NexusProcure.Core.Entities;
+﻿using NexusProcure.Core.Enums;
+
+namespace NexusProcure.Core.Entities;
 
 public class Requisition
 {
     public Guid Id { get; set; }
+    public string RequisitionNumber { get; set; }
     public Guid RequestedById { get; set; }
     public User RequestedBy { get; set; }
 
@@ -13,9 +16,11 @@ public class Requisition
     public Category Category { get; set; }
     
     public int RiskScore { get; set; }
-    public string RiskLevel { get; set; } // Low, Medium, High
+    public RiskLevel RiskLevel { get; set; } // Low, Medium, High
     
     public bool IsUrgent { get; set; } 
+    
+    public decimal TotalAmount { get; set; }
     
 
     // Navigation

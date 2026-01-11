@@ -11,8 +11,8 @@ public class ApprovalPolicy
     
     public RiskLevel RiskLevel { get; set; }
 
-    public Guid ApprovalLevelId { get; set; }
-    public ApprovalLevel ApprovalLevel { get; set; }
+    public Guid RoleId { get; set; }
+    public Role Role { get; set; }
 
     public int SequenceOrder { get; set; }
     public int EscalationHours { get; set; } // SLA

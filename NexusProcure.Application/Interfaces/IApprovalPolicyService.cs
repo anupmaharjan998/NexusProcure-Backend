@@ -9,5 +9,6 @@ public interface IApprovalPolicyService
     Task CreateAsync(ApprovalPolicyCreateDto dto);
     Task DeleteAsync(Guid id);
 
-    Task<List<ApprovalLevel>> ResolveApprovalFlowAsync(Guid requisitionId);
+    Task<List<ApprovalPolicy>> ResolveApprovalFlowAsync(Requisition requisition);
+    Task<List<ApprovalPolicy>> ResolveApprovalFlowByIdAsync(Guid requisitionId);
 }

@@ -48,12 +48,13 @@ public class EmailJobService : IEmailJobService
         var approval = await _context.Approvals
             .Include(a => a.Requisition)
             .ThenInclude(r => r.RequestedBy)
-            .Include(a => a.AssignedToUser)
+            //.Include(a => a.AssignedToUser)
             .FirstOrDefaultAsync(a => a.Id == approvalId);
 
         if (approval == null) return;
 
-        var email = approval.AssignedToUser.Email;
+        // var email = approval.AssignedToUser.Email;
+        var email = "mail@mail.com";
         var subject = $"Requisition Approval Required - {approval.Requisition.Id}";
         var body = $"You have a pending requisition to approve.\nAmount: {approval.Requisition.Items.Sum(i => i.EstimatedCost)}";
 
@@ -65,12 +66,13 @@ public class EmailJobService : IEmailJobService
         var approval = await _context.Approvals
             .Include(a => a.Requisition)
             .ThenInclude(r => r.RequestedBy)
-            .Include(a => a.AssignedToUser)
+            //.Include(a => a.AssignedToUser)
             .FirstOrDefaultAsync(a => a.Id == approvalId);
 
         if (approval == null) return;
 
-        var email = approval.AssignedToUser.Email;
+        // var email = approval.AssignedToUser.Email;
+        var email = "mail@mail.com";
         var subject = $"Requisition Escalated - {approval.Requisition.Id}";
         var body = $"This requisition has been escalated due to delay. Please take action immediately.";
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260110060827_AddSequenceForRequisition")]
+    partial class AddSequenceForRequisition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,6 +68,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime>("AssignedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("AssignedToUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Comments")
                         .HasColumnType("text");
 
@@ -93,6 +99,8 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ApprovedById");
+
+                    b.HasIndex("AssignedToUserId");
 
                     b.HasIndex("RequisitionId");
 
@@ -1168,6 +1176,12 @@ namespace NexusProcure.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ApprovedById");
 
+                    b.HasOne("NexusProcure.Core.Entities.User", "AssignedToUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("NexusProcure.Core.Entities.Requisition", "Requisition")
                         .WithMany("Approvals")
                         .HasForeignKey("RequisitionId")
@@ -1181,6 +1195,8 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ApprovedBy");
+
+                    b.Navigation("AssignedToUser");
 
                     b.Navigation("Requisition");
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260104052302_AddedTotalAmountRiskScore")]
+    partial class AddedTotalAmountRiskScore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,8 +24,6 @@ namespace NexusProcure.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.HasSequence("requisition_number_seq");
 
             modelBuilder.Entity("NexusProcure.Application.Interfaces.ApprovalDelegation", b =>
                 {
@@ -59,11 +60,17 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime?>("ActionedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("ApprovalLevelId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("ApprovedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("AssignedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AssignedToUserId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Comments")
                         .HasColumnType("text");
@@ -74,17 +81,8 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime?>("EscalatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid>("RequisitionId")
                         .HasColumnType("uuid");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("SequenceOrder")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -92,11 +90,13 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ApprovalLevelId");
+
                     b.HasIndex("ApprovedById");
 
-                    b.HasIndex("RequisitionId");
+                    b.HasIndex("AssignedToUserId");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RequisitionId");
 
                     b.ToTable("Approvals");
                 });
@@ -127,6 +127,9 @@ namespace NexusProcure.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("ApprovalLevelId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
@@ -139,17 +142,14 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<int>("RiskLevel")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("SequenceOrder")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
+                    b.HasIndex("ApprovalLevelId");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("ApprovalPolicies");
                 });
@@ -645,11 +645,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime>("RequestedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("RequisitionNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
                     b.Property<string>("RiskLevel")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -672,9 +667,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("RequestedById");
-
-                    b.HasIndex("RequisitionNumber")
-                        .IsUnique();
 
                     b.ToTable("Requisitions");
                 });
@@ -1164,9 +1156,21 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Approval", b =>
                 {
+                    b.HasOne("NexusProcure.Core.Entities.ApprovalLevel", "ApprovalLevel")
+                        .WithMany()
+                        .HasForeignKey("ApprovalLevelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("NexusProcure.Core.Entities.User", "ApprovedBy")
                         .WithMany()
                         .HasForeignKey("ApprovedById");
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "AssignedToUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedToUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("NexusProcure.Core.Entities.Requisition", "Requisition")
                         .WithMany("Approvals")
@@ -1174,17 +1178,13 @@ namespace NexusProcure.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("NexusProcure.Core.Entities.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("ApprovalLevel");
 
                     b.Navigation("ApprovedBy");
 
-                    b.Navigation("Requisition");
+                    b.Navigation("AssignedToUser");
 
-                    b.Navigation("Role");
+                    b.Navigation("Requisition");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.ApprovalLevel", b =>
@@ -1200,21 +1200,21 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.ApprovalPolicy", b =>
                 {
+                    b.HasOne("NexusProcure.Core.Entities.ApprovalLevel", "ApprovalLevel")
+                        .WithMany()
+                        .HasForeignKey("ApprovalLevelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("NexusProcure.Core.Entities.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("NexusProcure.Core.Entities.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("ApprovalLevel");
 
                     b.Navigation("Category");
-
-                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.AssetAssignment", b =>

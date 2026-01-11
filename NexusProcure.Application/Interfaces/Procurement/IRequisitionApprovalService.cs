@@ -11,4 +11,7 @@ public interface IRequisitionApprovalService
     Task<List<ApprovalLevelResponseDto>> GetRequiredLevelsAsync(decimal amount);
     Task<List<ApprovalDto>> GetApprovalsForRequisitionAsync(Guid requisitionId);
     Task<List<RequisitionResponseDto>> GetPendingApprovalsForRoleAsync(Guid userId);
+    
+    Task ApproveAsync(Guid requisitionId, Guid approverId, string decision, string comments);
+
 }

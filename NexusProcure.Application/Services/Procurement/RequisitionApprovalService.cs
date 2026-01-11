@@ -43,13 +43,13 @@ namespace NexusProcure.Application.Services.Procurement
 
                 // 🔹 Get pending approval assigned to this user
                 var approval = await _context.Approvals
-                    .Include(a => a.ApprovalLevel)
+                    .Include(a => a.Role)
                     .Where(a =>
                         a.RequisitionId == requisitionId &&
                         a.Status == "Pending" &&
-                        (a.AssignedToUserId == approverId ||
-                         _context.ApprovalDelegations.Any(d =>
-                             d.FromUserId == a.AssignedToUserId &&
+                        //(a.AssignedToUserId == approverId ||
+                        (_context.ApprovalDelegations.Any(d =>
+                             //d.FromUserId == a.AssignedToUserId &&
                              d.ToUserId == approverId &&
                              d.IsActive)))
                     .FirstOrDefaultAsync();
@@ -72,10 +72,10 @@ namespace NexusProcure.Application.Services.Procurement
                 {
                     // 🔹 Resolve full approval flow
                     var approvalFlow =
-                        await _approvalPolicyService.ResolveApprovalFlowAsync(requisitionId);
+                        await _approvalPolicyService.ResolveApprovalFlowByIdAsync(requisitionId);
 
                     var nextLevel = approvalFlow
-                        .SkipWhile(l => l.Id != approval.ApprovalLevelId)
+                        .SkipWhile(l => l.RoleId != approval.RoleId)
                         .Skip(1)
                         .FirstOrDefault();
 
@@ -88,7 +88,7 @@ namespace NexusProcure.Application.Services.Procurement
                         requisition.Status = "Partial Approved";
 
                         var nextApproverId = await _context.Users
-                            .Where(u => u.RoleId == nextLevel.RoleId)
+                            .Where(u => u.RoleId == nextLevel.Id)
                             .Select(u => u.Id)
                             .FirstOrDefaultAsync();
 
@@ -99,8 +99,8 @@ namespace NexusProcure.Application.Services.Procurement
                         {
                             Id = Guid.NewGuid(),
                             RequisitionId = requisitionId,
-                            ApprovalLevelId = nextLevel.Id,
-                            AssignedToUserId = nextApproverId,
+                            RoleId = nextLevel.Id,
+                            //AssignedToUserId = nextApproverId,
                             AssignedAt = DateTime.UtcNow,
                             Status = "Pending"
                         };
@@ -146,22 +146,72 @@ namespace NexusProcure.Application.Services.Procurement
 
         public async Task<List<RequisitionResponseDto>> GetPendingApprovalsForRoleAsync(Guid userId)
         {
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
             var approvals = await _context.Approvals
                 .Include(a => a.Requisition)
                 .ThenInclude(r => r.Items)
                 .Where(a =>
-                    a.Status == "Pending" &&
-                    (a.AssignedToUserId == userId ||
-                     _context.ApprovalDelegations.Any(d =>
-                         d.FromUserId == a.AssignedToUserId &&
-                         d.ToUserId == userId &&
-                         d.IsActive)))
+                    a.Status == "Pending" && a.IsActive && a.RoleId == user.RoleId)
                 .Select(a => a.Requisition)
                 .Distinct()
                 .ToListAsync();
 
 
             return _mapper.Map<List<RequisitionResponseDto>>(approvals);
+        }
+        
+        public async Task ApproveAsync(Guid requisitionId, Guid approverId, string decision, string comments)
+        {
+            var user =  _context.Users.SingleOrDefault(x => x.Id == approverId);
+            var approval = await _context.Approvals
+                    .Include(x => x.Requisition)
+                .FirstAsync(a =>
+                    a.RequisitionId == requisitionId &&
+                    a.RoleId == user.RoleId &&
+                    a.Status == "Pending");
+
+            approval.ApprovedById = user.Id;
+            approval.Status = decision;
+            approval.Comments = comments;
+            approval.ActionedAt = DateTime.UtcNow;
+
+            if (decision == "Rejected")
+            {
+                approval.Requisition.Status = "Rejected";
+            }
+            else
+            {
+                // Check if all approvals in this step are approved
+                bool stepCompleted = !await _context.Approvals.AnyAsync(a =>
+                    a.RequisitionId == requisitionId &&
+                    a.SequenceOrder == approval.SequenceOrder &&
+                    a.Status == "Pending");
+
+                if (!stepCompleted)
+                {
+                    int nextStep = approval.SequenceOrder + 1;
+
+                    var nextApprovals = await _context.Approvals
+                        .Where(a =>
+                            a.RequisitionId == requisitionId &&
+                            a.SequenceOrder == nextStep)
+                        .ToListAsync();
+
+                    if (nextApprovals.Any())
+                    {
+                        foreach (var next in nextApprovals)
+                        {
+                            next.IsActive = true; 
+                        }
+                    }
+                    else
+                    {
+                        approval.Requisition.Status = "Approved"; 
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }

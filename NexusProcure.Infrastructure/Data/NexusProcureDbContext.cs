@@ -39,10 +39,32 @@ public class NexusProcureDbContext : DbContext
     
     public DbSet<Category> Categories { get; set; }
     public DbSet<ApprovalDelegation> ApprovalDelegations { get; set; }
+    
+    public DbSet<TotalAmountRiskScore> TotalAmountRiskScores { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        /* ===============================
+           Requisition Number Sequence
+        =============================== */
+        modelBuilder.HasSequence<long>("requisition_number_seq")
+            .StartsAt(1)
+            .IncrementsBy(1);
+
+        /* ===============================
+           Requisition Configuration
+        =============================== */
+        modelBuilder.Entity<Requisition>(entity =>
+        {
+            entity.Property(r => r.RequisitionNumber)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasIndex(r => r.RequisitionNumber)
+                .IsUnique();
+        });
 
         // Requisition → Items (1-M)
         modelBuilder.Entity<Requisition>()
@@ -50,6 +72,7 @@ public class NexusProcureDbContext : DbContext
             .WithOne(i => i.Requisition)
             .HasForeignKey(i => i.RequisitionId)
             .OnDelete(DeleteBehavior.Cascade);
+        
 
         
         // PR → PO (1-M)
@@ -57,6 +80,12 @@ public class NexusProcureDbContext : DbContext
             .HasOne(po => po.Requisition)
             .WithMany(r => r.PurchaseOrders)
             .HasForeignKey(po => po.RequisitionId);
+        
+        modelBuilder.Entity<Requisition>()
+            .Property(r => r.RiskLevel)
+            .HasConversion<string>()     // 👈 stores enum NAME
+            .HasMaxLength(20)
+            .IsRequired();
 
         
         // User → Department (1-M)

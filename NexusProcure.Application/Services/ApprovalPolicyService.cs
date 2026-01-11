@@ -2,6 +2,7 @@
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs.Approval;
 using NexusProcure.Core.Entities;
+using NexusProcure.Core.Enums;
 using NexusProcure.Infrastructure.Data;
 
 namespace NexusProcure.Application.Services;
@@ -17,7 +18,7 @@ public class ApprovalPolicyService : IApprovalPolicyService
         _riskScoringService = riskScoringService;
     }
 
-    public async Task<List<ApprovalLevel>> ResolveApprovalFlowAsync(Guid requisitionId)
+    public async Task<List<ApprovalPolicy>> ResolveApprovalFlowByIdAsync(Guid requisitionId)
     {
         var requisition = await _context.Requisitions
             .Include(r => r.Items)
@@ -25,21 +26,29 @@ public class ApprovalPolicyService : IApprovalPolicyService
 
         if (requisition == null)
             throw new KeyNotFoundException("Requisition not found");
-
-        var riskLevel = await _riskScoringService.CalculateAsync(requisitionId);
-
-        return await _context.ApprovalPolicies
-            .Include(p => p.ApprovalLevel)
-            .ThenInclude(l => l.Role)
-            .Where(p =>
-                p.CategoryId == requisition.CategoryId &&
-                p.RiskLevel == riskLevel &&
-                p.IsActive
-            )
-            .OrderBy(p => p.SequenceOrder)
-            .Select(p => p.ApprovalLevel)
-            .ToListAsync();
+        
+        return await ResolveApprovalFlowAsync(requisition);
     }
+    
+    public async Task<List<ApprovalPolicy>> ResolveApprovalFlowAsync(Requisition requisition)
+        {
+    
+            if (requisition == null)
+                throw new KeyNotFoundException("Requisition not found");
+    
+            //var riskLevel = await _riskScoringService.CalculateRiskLevelAsync(requisition);
+            var riskLevel = requisition.RiskLevel;
+    
+            return await _context.ApprovalPolicies
+                .Include(p => p.Role)
+                .Where(p =>
+                    p.CategoryId == requisition.CategoryId &&
+                    p.RiskLevel == riskLevel &&
+                    p.IsActive
+                )
+                .OrderBy(p => p.SequenceOrder)
+                .ToListAsync();
+        }
 
 
 
@@ -49,9 +58,10 @@ public class ApprovalPolicyService : IApprovalPolicyService
         {
             Id = Guid.NewGuid(),
             CategoryId = dto.CategoryId,
-            ApprovalLevelId = dto.ApprovalLevelId,
-            RiskLevel = dto.RiskLevel,
+            RoleId = dto.RoleId,
+            RiskLevel = Enum.Parse<RiskLevel>(dto.RiskLevel, ignoreCase: true),
             SequenceOrder = dto.SequenceOrder,
+            EscalationHours = dto.EscalationHours,
             IsActive = true
         };
 
@@ -75,15 +85,16 @@ public class ApprovalPolicyService : IApprovalPolicyService
     {
         return await _context.ApprovalPolicies
             .Include(p => p.Category)
-            .Include(p => p.ApprovalLevel)
-            .ThenInclude(l => l.Role)
+            .Include(p => p.Role)
             .Select(p => new ApprovalPolicyResponseDto
             {
                 Id = p.Id,
                 CategoryName = p.Category.Name,
-                RoleName = p.ApprovalLevel.Role.Name,
-                RiskLevel = p.RiskLevel,
-                SequenceOrder = p.SequenceOrder
+                RoleName = p.Role.Name,
+                RiskLevel = p.RiskLevel.ToString(),
+                SequenceOrder = p.SequenceOrder,
+                EscalationHours = p.EscalationHours,
+                IsActive = p.IsActive
             })
             .ToListAsync();
     }
