@@ -1,6 +1,8 @@
-﻿namespace NexusProcure.Application.Interfaces;
+﻿using NexusProcure.Core.DTOs.Email;
+
+namespace NexusProcure.Application.Interfaces;
 
 public interface IEmailService
 {
-    Task SendAsync(string toEmail, string subject, string htmlBody);
+    Task SendAsync(SendEmailDto dto);
 }

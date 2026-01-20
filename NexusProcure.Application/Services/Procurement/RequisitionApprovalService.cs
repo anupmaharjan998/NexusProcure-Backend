@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.DTOs.Procurement;
@@ -67,6 +69,8 @@ namespace NexusProcure.Application.Services.Procurement
                 if (decision == "Rejected")
                 {
                     requisition.Status = "Rejected";
+                    // Queue email with Hangfire
+                    BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalStatusEmailAsync(requisition.Id));
                 }
                 else
                 {
@@ -82,6 +86,7 @@ namespace NexusProcure.Application.Services.Procurement
                     if (nextLevel == null)
                     {
                         requisition.Status = "Approved";
+                        BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalStatusEmailAsync(requisition.Id));
                     }
                     else
                     {
@@ -178,6 +183,7 @@ namespace NexusProcure.Application.Services.Procurement
             if (decision == "Rejected")
             {
                 approval.Requisition.Status = "Rejected";
+                BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalStatusEmailAsync(requisitionId));
             }
             else
             {
@@ -203,10 +209,12 @@ namespace NexusProcure.Application.Services.Procurement
                         {
                             next.IsActive = true; 
                         }
+                        BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalNotificationAsync(requisitionId));
                     }
                     else
                     {
                         approval.Requisition.Status = "Approved"; 
+                        BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalStatusEmailAsync(requisitionId));
                     }
                 }
             }

@@ -24,7 +24,7 @@ public class ApprovalEscalationJob : IApprovalEscalationJob
             .Include(a => a.Requisition)
             .Include(a => a.Role)
             .Where(a =>
-                a.Status == "Pending" &&
+                a.Status == "Pending" && a.IsActive &&
                 !a.Escalated)
             .ToListAsync();
 
@@ -43,44 +43,51 @@ public class ApprovalEscalationJob : IApprovalEscalationJob
 
             if (elapsedHours < policy.EscalationHours)
                 continue;
-
-            // 🔹 Find next approval policy in sequence
-            var nextPolicy = await _context.ApprovalPolicies
-                .Where(p =>
-                    p.CategoryId == policy.CategoryId &&
-                    p.RiskLevel == policy.RiskLevel &&
-                    p.SequenceOrder > policy.SequenceOrder &&
-                    p.IsActive)
-                .OrderBy(p => p.SequenceOrder)
-                .FirstOrDefaultAsync();
-
-            if (nextPolicy == null)
-                continue;
-
-            // 🔹 Mark current approval as escalated
+            
+            approval.Requisition.Status = "Rejected";
+            //approval.Requisition. = now;
+            approval.Status = "EscalationExpired";
             approval.Escalated = true;
             approval.EscalatedAt = now;
+            approval.Comments = "Auto-rejected due to approval escalation timeout";
 
-            // 🔹 Assign new approval task
-            var nextApproverUserId = await _context.Users
-                .Where(u => u.RoleId == nextPolicy.RoleId)
-                .Select(u => u.Id)
-                .FirstOrDefaultAsync();
-
-            if (nextApproverUserId == Guid.Empty)
-                continue;
-
-            var escalatedApproval = new Approval
-            {
-                Id = Guid.NewGuid(),
-                RequisitionId = approval.RequisitionId,
-                RoleId = nextPolicy.RoleId,
-                //AssignedToUserId = nextApproverUserId,
-                AssignedAt = now,
-                Status = "Pending"
-            };
-
-            _context.Approvals.Add(escalatedApproval);
+            // // 🔹 Find next approval policy in sequence
+            // var nextPolicy = await _context.ApprovalPolicies
+            //     .Where(p =>
+            //         p.CategoryId == policy.CategoryId &&
+            //         p.RiskLevel == policy.RiskLevel &&
+            //         p.SequenceOrder > policy.SequenceOrder &&
+            //         p.IsActive)
+            //     .OrderBy(p => p.SequenceOrder)
+            //     .FirstOrDefaultAsync();
+            //
+            // if (nextPolicy == null)
+            //     continue;
+            //
+            // // 🔹 Mark current approval as escalated
+            // approval.Escalated = true;
+            // approval.EscalatedAt = now;
+            //
+            // // 🔹 Assign new approval task
+            // var nextApproverUserId = await _context.Users
+            //     .Where(u => u.RoleId == nextPolicy.RoleId)
+            //     .Select(u => u.Id)
+            //     .FirstOrDefaultAsync();
+            //
+            // if (nextApproverUserId == Guid.Empty)
+            //     continue;
+            //
+            // var escalatedApproval = new Approval
+            // {
+            //     Id = Guid.NewGuid(),
+            //     RequisitionId = approval.RequisitionId,
+            //     RoleId = nextPolicy.RoleId,
+            //     //AssignedToUserId = nextApproverUserId,
+            //     AssignedAt = now,
+            //     Status = "Pending"
+            // };
+            //
+            // _context.Approvals.Add(escalatedApproval);
             //await _emailJobService.SendEscalationNotificationAsync(escalatedApproval.Id);
         }
 

@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Helper;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Core.DTOs.Procurement;
@@ -17,15 +19,18 @@ public class RequisitionService : IRequisitionService
     private readonly IRiskScoringService _riskScoringService;
     private readonly IApprovalPolicyService _approvalPolicyService;
     private readonly IRequisitionNumberGenerator _requisitionNumberGenerator;
+    private readonly IEmailService _emailService;
 
     public RequisitionService(NexusProcureDbContext context, IMapper mapper, IRiskScoringService riskScoringService,
-        IApprovalPolicyService approvalPolicyService, IRequisitionNumberGenerator requisitionNumberGenerator)
+        IApprovalPolicyService approvalPolicyService, IRequisitionNumberGenerator requisitionNumberGenerator,
+        IEmailService emailService)
     {
         _context = context;
         _mapper = mapper;
         _riskScoringService = riskScoringService;
         _approvalPolicyService = approvalPolicyService;
         _requisitionNumberGenerator = requisitionNumberGenerator;
+        _emailService = emailService;
     }
 
     public async Task<IEnumerable<RequisitionResponseDto>> GetAllAsync()
@@ -106,7 +111,7 @@ public class RequisitionService : IRequisitionService
             if (!approvalLevels.Any())
                 throw new InvalidOperationException("No approval policy configured");
 
-            //var firstLevel = approvalLevels.First();
+            var firstLevel = approvalLevels.First();
 
             // 🔹 Assign first approver (role → user)
             // var approverUserId = await _context.Users
@@ -145,6 +150,9 @@ public class RequisitionService : IRequisitionService
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
+            
+            // Queue email with Hangfire
+            BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalNotificationAsync(requisition.Id));
 
             return _mapper.Map<RequisitionResponseDto>(requisition);
         }
