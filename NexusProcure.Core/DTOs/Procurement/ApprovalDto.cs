@@ -1,4 +1,6 @@
-﻿namespace NexusProcure.Application.Services.Procurement;
+﻿using NexusProcure.Core.DTOs;
+
+namespace NexusProcure.Application.Services.Procurement;
 
 public class ApprovalDto
 {
@@ -6,9 +8,13 @@ public class ApprovalDto
     public Guid RequisitionId { get; set; }
 
     public Guid ApprovedById { get; set; }
+    public UserResponseDto ApprovedBy { get; set; }
+    
+    public Guid RoleId { get; set; }
+    public RoleDto Role { get; set; }
 
     public DateTime ApprovedDate { get; set; }
-    public string Decision { get; set; } 
+    public string Status { get; set; } 
     public string Comments { get; set; }
 }
 

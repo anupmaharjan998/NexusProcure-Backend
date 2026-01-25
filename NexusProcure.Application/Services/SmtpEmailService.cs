@@ -1,49 +1,48 @@
 ﻿using System.Net;
 using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Models;
+using NexusProcure.Core.DTOs.Email;
 
 namespace NexusProcure.Application.Services;
 
 public class SmtpEmailService : IEmailService
 {
+    private readonly IConfiguration _configuration;
     private readonly EmailSettings _settings;
 
-    public SmtpEmailService(IOptions<EmailSettings> options)
+    public SmtpEmailService(IOptions<EmailSettings> options, IConfiguration configuration)
     {
+        _configuration = configuration;
         _settings = options.Value ?? new EmailSettings();
     }
 
-    public async Task SendAsync(string toEmail, string subject, string htmlBody)
+    public async Task SendAsync(SendEmailDto dto)
     {
-        // If not configured, silently no-op to avoid crashing in environments without SMTP
-        if (string.IsNullOrWhiteSpace(_settings.Host) || string.IsNullOrWhiteSpace(_settings.FromEmail))
-        {
-            return;
-        }
+        var smtp = _configuration.GetSection("Smtp");
 
-        using var message = new MailMessage();
-        message.From = new MailAddress(_settings.FromEmail, _settings.FromName);
-        message.To.Add(new MailAddress(toEmail));
-        message.Subject = subject;
-        message.Body = htmlBody;
-        message.IsBodyHtml = true;
-
-        using var client = new SmtpClient(_settings.Host, _settings.Port)
+        var client = new SmtpClient(smtp["Host"], int.Parse(smtp["Port"]!))
         {
-            EnableSsl = _settings.EnableSsl
+            Credentials = new NetworkCredential(
+                smtp["Username"],
+                smtp["Password"]
+            ),
+            EnableSsl = true,
+            UseDefaultCredentials = false
         };
 
-        if (!string.IsNullOrWhiteSpace(_settings.Username))
+        var mail = new MailMessage
         {
-            client.Credentials = new NetworkCredential(_settings.Username, _settings.Password);
-        }
-        else
-        {
-            client.UseDefaultCredentials = true;
-        }
+            From = new MailAddress(smtp["FromEmail"]!),
+            Subject = dto.Subject,
+            Body = dto.HtmlBody,
+            IsBodyHtml = true
+        };
 
-        await client.SendMailAsync(message);
+        mail.To.Add(dto.To);
+
+        await client.SendMailAsync(mail);
     }
 }

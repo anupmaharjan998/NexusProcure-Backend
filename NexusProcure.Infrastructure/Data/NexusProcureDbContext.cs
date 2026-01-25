@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.Entities;
+using NexusProcure.Core.Entities.RequestForQuotations;
 using NexusProcure.Infrastructure.Data.Seeds;
 
 namespace NexusProcure.Infrastructure.Data;
@@ -39,10 +40,41 @@ public class NexusProcureDbContext : DbContext
     
     public DbSet<Category> Categories { get; set; }
     public DbSet<ApprovalDelegation> ApprovalDelegations { get; set; }
+    
+    public DbSet<TotalAmountRiskScore> TotalAmountRiskScores { get; set; }
+    
+    public DbSet<Quotation> Quotations { get; set; }
+    public DbSet<QuotationItem> QuotationItems { get; set; }
+    public DbSet<RequestForQuotation> RequestForQuotations { get; set; }
+    public DbSet<RfqVendor> RfqVendors { get; set; }
+    public DbSet<RfqAudit> RfqAudits { get; set; }
+    public DbSet<RfqAccessToken> RfqAccessTokens { get; set; }
+    
+    
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        /* ===============================
+           Requisition Number Sequence
+        =============================== */
+        modelBuilder.HasSequence<long>("requisition_number_seq")
+            .StartsAt(1)
+            .IncrementsBy(1);
+
+        /* ===============================
+           Requisition Configuration
+        =============================== */
+        modelBuilder.Entity<Requisition>(entity =>
+        {
+            entity.Property(r => r.RequisitionNumber)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.HasIndex(r => r.RequisitionNumber)
+                .IsUnique();
+        });
 
         // Requisition → Items (1-M)
         modelBuilder.Entity<Requisition>()
@@ -50,6 +82,7 @@ public class NexusProcureDbContext : DbContext
             .WithOne(i => i.Requisition)
             .HasForeignKey(i => i.RequisitionId)
             .OnDelete(DeleteBehavior.Cascade);
+        
 
         
         // PR → PO (1-M)
@@ -57,6 +90,12 @@ public class NexusProcureDbContext : DbContext
             .HasOne(po => po.Requisition)
             .WithMany(r => r.PurchaseOrders)
             .HasForeignKey(po => po.RequisitionId);
+        
+        modelBuilder.Entity<Requisition>()
+            .Property(r => r.RiskLevel)
+            .HasConversion<string>()     // 👈 stores enum NAME
+            .HasMaxLength(20)
+            .IsRequired();
 
         
         // User → Department (1-M)
@@ -129,6 +168,22 @@ public class NexusProcureDbContext : DbContext
             .HasOne(rp => rp.Permission)
             .WithMany(p => p.RolePermissions)
             .HasForeignKey(rp => rp.PermissionId);
+        
+        //RFQ
+        modelBuilder.Entity<RfqVendor>()
+            .HasIndex(v => v.AccessToken)
+            .IsUnique();
+        
+        modelBuilder.Entity<Quotation>()
+            .HasIndex(q => q.RfqVendorId)
+            .IsUnique();
+
+        /* ===============================
+           RFQ Number Sequence
+        =============================== */
+        modelBuilder.HasSequence<long>("rfq_number_seq")
+            .StartsAt(1)
+            .IncrementsBy(1);
 
         
         // SEEDS

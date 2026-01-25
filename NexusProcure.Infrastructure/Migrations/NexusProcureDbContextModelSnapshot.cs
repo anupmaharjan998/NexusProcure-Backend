@@ -22,6 +22,10 @@ namespace NexusProcure.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("requisition_number_seq");
+
+            modelBuilder.HasSequence("rfq_number_seq");
+
             modelBuilder.Entity("NexusProcure.Application.Interfaces.ApprovalDelegation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -57,17 +61,11 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime?>("ActionedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("ApprovalLevelId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ApprovedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("AssignedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("AssignedToUserId")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("Comments")
                         .HasColumnType("text");
@@ -78,8 +76,17 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime?>("EscalatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("RequisitionId")
                         .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SequenceOrder")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -87,13 +94,11 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApprovalLevelId");
-
                     b.HasIndex("ApprovedById");
 
-                    b.HasIndex("AssignedToUserId");
-
                     b.HasIndex("RequisitionId");
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("Approvals");
                 });
@@ -124,9 +129,6 @@ namespace NexusProcure.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ApprovalLevelId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
@@ -139,14 +141,17 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<int>("RiskLevel")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("SequenceOrder")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApprovalLevelId");
-
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("ApprovalPolicies");
                 });
@@ -621,6 +626,211 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.ToTable("PurchaseOrderItems");
                 });
 
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.Quotation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("RequestForQuotationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RfqId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RfqVendorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SubmissionMethod")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestForQuotationId");
+
+                    b.HasIndex("RfqVendorId")
+                        .IsUnique();
+
+                    b.ToTable("Quotations");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.QuotationItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DeliveryDays")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("TaxPercentage")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationId");
+
+                    b.ToTable("QuotationItems");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequisitionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RfqNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SubmissionDeadline")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequisitionId");
+
+                    b.ToTable("RequestForQuotations");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RfqAccessToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsExpired")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("RfqId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RfqId");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("RfqAccessTokens");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RfqAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PerformedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RfqId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RfqId");
+
+                    b.ToTable("RfqAudits");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RfqVendor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RfqId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("TokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ViewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccessToken")
+                        .IsUnique();
+
+                    b.HasIndex("RfqId");
+
+                    b.HasIndex("VendorId");
+
+                    b.ToTable("RfqVendors");
+                });
+
             modelBuilder.Entity("NexusProcure.Core.Entities.Requisition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -642,9 +852,15 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime>("RequestedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("RequisitionNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("RiskLevel")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("RiskScore")
                         .HasColumnType("integer");
@@ -653,6 +869,9 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -660,6 +879,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("RequestedById");
+
+                    b.HasIndex("RequisitionNumber")
+                        .IsUnique();
 
                     b.ToTable("Requisitions");
                 });
@@ -931,6 +1153,29 @@ namespace NexusProcure.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("NexusProcure.Core.Entities.TotalAmountRiskScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("MaxAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("MinAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("RiskPoints")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TotalAmountRiskScores");
+                });
+
             modelBuilder.Entity("NexusProcure.Core.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1126,21 +1371,9 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Approval", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.ApprovalLevel", "ApprovalLevel")
-                        .WithMany()
-                        .HasForeignKey("ApprovalLevelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("NexusProcure.Core.Entities.User", "ApprovedBy")
                         .WithMany()
                         .HasForeignKey("ApprovedById");
-
-                    b.HasOne("NexusProcure.Core.Entities.User", "AssignedToUser")
-                        .WithMany()
-                        .HasForeignKey("AssignedToUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.HasOne("NexusProcure.Core.Entities.Requisition", "Requisition")
                         .WithMany("Approvals")
@@ -1148,13 +1381,17 @@ namespace NexusProcure.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ApprovalLevel");
+                    b.HasOne("NexusProcure.Core.Entities.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("ApprovedBy");
 
-                    b.Navigation("AssignedToUser");
-
                     b.Navigation("Requisition");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.ApprovalLevel", b =>
@@ -1170,21 +1407,21 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.ApprovalPolicy", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.ApprovalLevel", "ApprovalLevel")
-                        .WithMany()
-                        .HasForeignKey("ApprovalLevelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("NexusProcure.Core.Entities.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ApprovalLevel");
+                    b.HasOne("NexusProcure.Core.Entities.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.AssetAssignment", b =>
@@ -1255,6 +1492,92 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("PurchaseOrder");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.Quotation", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", null)
+                        .WithMany("Quotations")
+                        .HasForeignKey("RequestForQuotationId");
+
+                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RfqVendor", "RfqVendor")
+                        .WithMany()
+                        .HasForeignKey("RfqVendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RfqVendor");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.QuotationItem", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.Quotation", "Quotation")
+                        .WithMany("Items")
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quotation");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Requisition", "Requisition")
+                        .WithMany()
+                        .HasForeignKey("RequisitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Requisition");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RfqAccessToken", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", "Rfq")
+                        .WithMany()
+                        .HasForeignKey("RfqId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rfq");
+
+                    b.Navigation("Vendor");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RfqAudit", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", "Rfq")
+                        .WithMany()
+                        .HasForeignKey("RfqId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rfq");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RfqVendor", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", "Rfq")
+                        .WithMany("Vendors")
+                        .HasForeignKey("RfqId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Vendor", "Vendor")
+                        .WithMany()
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rfq");
+
+                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Requisition", b =>
@@ -1374,6 +1697,18 @@ namespace NexusProcure.Infrastructure.Migrations
             modelBuilder.Entity("NexusProcure.Core.Entities.PurchaseOrder", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.Quotation", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", b =>
+                {
+                    b.Navigation("Quotations");
+
+                    b.Navigation("Vendors");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Requisition", b =>

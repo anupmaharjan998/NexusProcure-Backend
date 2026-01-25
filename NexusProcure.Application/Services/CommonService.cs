@@ -48,6 +48,7 @@ public class CommonService : ICommonService
         if (!string.IsNullOrEmpty(dto.Name)) category.Name = dto.Name;
         category.Description = dto.Description;
         category.Type = dto.Type;
+        category.RiskWeight = dto.RiskWeight;
         
         await _context.SaveChangesAsync();
 

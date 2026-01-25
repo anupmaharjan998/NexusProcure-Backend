@@ -22,6 +22,7 @@ public class RequisitionItemDto
 public class RequisitionResponseDto
 {
     public Guid Id { get; set; }
+    public string RequisitionNumber { get; set; }
     public Guid RequestedById { get; set; }
     public UserResponseDto RequestedBy { get; set; }
     
@@ -30,6 +31,8 @@ public class RequisitionResponseDto
 
     public DateTime RequestedDate { get; set; }
     public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected
+    
+    public string CategoryName { get; set; }
 
     // Navigation
     public List<RequisitionItemDto> Items { get; set; }

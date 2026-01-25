@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.DTOs.Procurement;
@@ -21,102 +23,6 @@ namespace NexusProcure.Application.Services.Procurement
             _context = context;
             _mapper = mapper;
             _approvalPolicyService = approvalPolicyService;
-        }
-
-        public async Task ApproveRequisitionAsync(
-            Guid requisitionId,
-            Guid approverId,
-            string decision,
-            string comments)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-
-            try
-            {
-                var requisition = await _context.Requisitions
-                    .Include(r => r.Items)
-                    .Include(r => r.Approvals)
-                    .FirstOrDefaultAsync(r => r.Id == requisitionId);
-
-                if (requisition == null)
-                    throw new KeyNotFoundException("Requisition not found");
-
-                // 🔹 Get pending approval assigned to this user
-                var approval = await _context.Approvals
-                    .Include(a => a.ApprovalLevel)
-                    .Where(a =>
-                        a.RequisitionId == requisitionId &&
-                        a.Status == "Pending" &&
-                        (a.AssignedToUserId == approverId ||
-                         _context.ApprovalDelegations.Any(d =>
-                             d.FromUserId == a.AssignedToUserId &&
-                             d.ToUserId == approverId &&
-                             d.IsActive)))
-                    .FirstOrDefaultAsync();
-
-
-                if (approval == null)
-                    throw new UnauthorizedAccessException("No pending approval assigned");
-
-                // 🔹 Update approval
-                approval.Status = decision;
-                approval.ApprovedById = approverId;
-                approval.ActionedAt = DateTime.UtcNow;
-                approval.Comments = comments;
-
-                if (decision == "Rejected")
-                {
-                    requisition.Status = "Rejected";
-                }
-                else
-                {
-                    // 🔹 Resolve full approval flow
-                    var approvalFlow =
-                        await _approvalPolicyService.ResolveApprovalFlowAsync(requisitionId);
-
-                    var nextLevel = approvalFlow
-                        .SkipWhile(l => l.Id != approval.ApprovalLevelId)
-                        .Skip(1)
-                        .FirstOrDefault();
-
-                    if (nextLevel == null)
-                    {
-                        requisition.Status = "Approved";
-                    }
-                    else
-                    {
-                        requisition.Status = "Partial Approved";
-
-                        var nextApproverId = await _context.Users
-                            .Where(u => u.RoleId == nextLevel.RoleId)
-                            .Select(u => u.Id)
-                            .FirstOrDefaultAsync();
-
-                        if (nextApproverId == Guid.Empty)
-                            throw new InvalidOperationException("Next approver not found");
-
-                        var nextApproval = new Approval
-                        {
-                            Id = Guid.NewGuid(),
-                            RequisitionId = requisitionId,
-                            ApprovalLevelId = nextLevel.Id,
-                            AssignedToUserId = nextApproverId,
-                            AssignedAt = DateTime.UtcNow,
-                            Status = "Pending"
-                        };
-
-                        await _context.Approvals.AddAsync(nextApproval);
-                    }
-                }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
         }
 
 
@@ -146,22 +52,117 @@ namespace NexusProcure.Application.Services.Procurement
 
         public async Task<List<RequisitionResponseDto>> GetPendingApprovalsForRoleAsync(Guid userId)
         {
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
             var approvals = await _context.Approvals
                 .Include(a => a.Requisition)
                 .ThenInclude(r => r.Items)
                 .Where(a =>
-                    a.Status == "Pending" &&
-                    (a.AssignedToUserId == userId ||
-                     _context.ApprovalDelegations.Any(d =>
-                         d.FromUserId == a.AssignedToUserId &&
-                         d.ToUserId == userId &&
-                         d.IsActive)))
+                    a.Status == "Pending" && a.IsActive && a.RoleId == user.RoleId)
                 .Select(a => a.Requisition)
                 .Distinct()
                 .ToListAsync();
 
 
             return _mapper.Map<List<RequisitionResponseDto>>(approvals);
+        }
+
+        public async Task ApproveAsync(
+            Guid requisitionId,
+            Guid approverId,
+            string decision,
+            string comments)
+        {
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            bool sendStatusEmail = false;
+            bool sendNextStepEmail = false;
+            bool createRfq = false;
+
+            try
+            {
+                var user = await _context.Users
+                    .SingleAsync(u => u.Id == approverId);
+
+                var approval = await _context.Approvals
+                    .Include(a => a.Requisition)
+                    .FirstAsync(a =>
+                        a.RequisitionId == requisitionId &&
+                        a.RoleId == user.RoleId &&
+                        a.Status == "Pending");
+
+                approval.ApprovedById = user.Id;
+                approval.Status = decision;
+                approval.Comments = comments;
+                approval.ActionedAt = DateTime.UtcNow;
+
+                if (decision == "Rejected")
+                {
+                    approval.Requisition.Status = "Rejected";
+                    sendStatusEmail = true;
+                }
+                else
+                {
+                    bool stepCompleted = !await _context.Approvals.AnyAsync(a =>
+                        a.RequisitionId == requisitionId &&
+                        a.SequenceOrder == approval.SequenceOrder &&
+                        a.Status == "Pending");
+
+                    if (!stepCompleted)
+                    {
+                        int nextStep = approval.SequenceOrder + 1;
+
+                        var nextApprovals = await _context.Approvals
+                            .Where(a =>
+                                a.RequisitionId == requisitionId &&
+                                a.SequenceOrder == nextStep)
+                            .ToListAsync();
+
+                        if (nextApprovals.Any())
+                        {
+                            foreach (var next in nextApprovals)
+                            {
+                                next.IsActive = true;
+                            }
+
+                            sendNextStepEmail = true;
+                        }
+                        else
+                        {
+                            approval.Requisition.Status = "Approved";
+                            sendStatusEmail = true;
+                            createRfq = true;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            // -----------------------------------
+            // SIDE EFFECTS AFTER SUCCESSFUL COMMIT
+            // -----------------------------------
+
+            if (sendStatusEmail)
+            {
+                BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalStatusEmailAsync(requisitionId));
+            }
+
+            if (sendNextStepEmail)
+            {
+                BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalNotificationAsync(requisitionId));
+            }
+
+            if (createRfq)
+            {
+                BackgroundJob.Enqueue<IRfqJob>(job => job.CreateAndSendRfqAsync(requisitionId));
+            }
         }
     }
 }

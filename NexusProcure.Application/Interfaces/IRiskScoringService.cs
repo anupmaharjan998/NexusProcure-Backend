@@ -6,6 +6,7 @@ namespace NexusProcure.Application.Interfaces;
 public interface IRiskScoringService
 {
     Task<int> CalculateRiskScoreAsync(Requisition requisition);
-    string ResolveRiskLevel(int score);
-    Task<RiskLevel> CalculateAsync(Guid requisitionId);
+    RiskLevel ResolveRiskLevel(int score);
+    // Task<RiskLevel> CalculateAsync(Guid requisitionId);
+    Task<RiskLevel> CalculateRiskLevelAsync(Requisition requisition);
 }
