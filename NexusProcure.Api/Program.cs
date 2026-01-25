@@ -16,16 +16,20 @@ using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Helper;
 using NexusProcure.Application.Interfaces.Procurement;
+using NexusProcure.Application.Interfaces.RequestForQuotation;
 using NexusProcure.Application.Models;
 using NexusProcure.Application.Services;
 using NexusProcure.Application.Services.BackgroundJobs;
 using NexusProcure.Application.Services.Helper;
 using NexusProcure.Application.Services.Procurement;
+using NexusProcure.Application.Services.RequestForQuotation;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Infrastructure.Data;
+using OfficeOpenXml;
+
 
 var builder = WebApplication.CreateBuilder(args);
-
+//ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -157,6 +161,9 @@ builder.Services.AddScoped<IRiskScoringService, RiskScoringService>();
 builder.Services.AddScoped<IDelegationService, DelegationService>();
 builder.Services.AddScoped<ITotalAmountRiskScoreService, TotalAmountRiskScoreService>();
 builder.Services.AddScoped<IRequisitionNumberGenerator, RequisitionNumberGenerator>();
+builder.Services.AddScoped<IRfqNumberGenerator, RfqNumberGenerator>();
+builder.Services.AddScoped<IRfqService, RfqService>();
+builder.Services.AddScoped<IRfqExcelService, RfqExcelService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
@@ -175,6 +182,8 @@ builder.Services.AddHttpContextAccessor();
 // Register background email job service
 builder.Services.AddScoped<IEmailJobService, EmailJobService>();
 builder.Services.AddScoped<IApprovalEscalationJob, ApprovalEscalationJob>();
+builder.Services.AddScoped<IRfqJob, RfqJob>();
+
 
 builder.Services.AddScoped<HangfireJobLoggingFilter>();
 
@@ -190,20 +199,41 @@ builder.Services.AddScoped<HangfireJobLoggingFilter>();
 // // Start Hangfire server
 // builder.Services.AddHangfireServer();
 
+// builder.Services.AddHangfireServer(options =>
+// {
+//     options.Queues = new[] { "default", "rfq" };
+// });
+//
+//
+//
+// var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionHangFire");
+//
+// if (!string.IsNullOrEmpty(connectionString))
+// {
+//     builder.Services.AddHangfire(config =>
+//     {
+//         config.UseSimpleAssemblyNameTypeSerializer()
+//             .UseRecommendedSerializerSettings()
+//             .UsePostgreSqlStorage(connectionString);
+//     });
+//
+//     builder.Services.AddHangfireServer();
+// }
+var hangfireConnection = builder.Configuration
+    .GetConnectionString("DefaultConnectionHangFire");
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnectionHangFire");
-
-if (!string.IsNullOrEmpty(connectionString))
+builder.Services.AddHangfire(config =>
 {
-    builder.Services.AddHangfire(config =>
-    {
-        config.UseSimpleAssemblyNameTypeSerializer()
-            .UseRecommendedSerializerSettings()
-            .UsePostgreSqlStorage(connectionString);
-    });
+    config.UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(hangfireConnection);
+});
 
-    builder.Services.AddHangfireServer();
-}
+builder.Services.AddHangfireServer(options =>
+{
+    options.Queues = new[] { "default", "rfq" };
+});
+
 
 
 
@@ -228,6 +258,14 @@ RecurringJob.AddOrUpdate<IApprovalEscalationJob>(
     job => job.RunAsync(),
     Cron.Hourly
 );
+
+RecurringJob.AddOrUpdate<IRfqJob>(
+    "rfq-closing-job",
+    job => job.ValidateTokenAsync(),
+    Cron.Daily
+);
+
+
 
 
 // Swagger

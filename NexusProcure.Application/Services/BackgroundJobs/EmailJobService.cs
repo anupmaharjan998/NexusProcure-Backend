@@ -8,8 +8,6 @@ using NexusProcure.Infrastructure.Data;
 
 namespace NexusProcure.Application.Services.BackgroundJobs;
 
-
-
 public class EmailJobService : IEmailJobService
 {
     private readonly IEmailService _emailService;
@@ -39,6 +37,7 @@ public class EmailJobService : IEmailJobService
 
         await _emailService.SendAsync(emailDto);
     }
+
     public async Task SendUserPasswordResetTokenEmailAsync(string email, string fullName, string resetLink)
     {
         var subject = "Password Reset Request";
@@ -57,7 +56,7 @@ public class EmailJobService : IEmailJobService
 
         await _emailService.SendAsync(emailDto);
     }
-    
+
     public async Task SendApprovalNotificationAsync(Guid requisitionId)
     {
         var requisition = await _context.Requisitions
@@ -68,7 +67,7 @@ public class EmailJobService : IEmailJobService
             return;
 
         var firstRoleId = await _context.Approvals
-            .Where(a => a.RequisitionId == requisitionId && a.SequenceOrder == 1)
+            .Where(a => a.RequisitionId == requisitionId && a.Status == "Pending" && a.IsActive )
             .Select(a => a.RoleId)
             .FirstOrDefaultAsync();
 
@@ -103,11 +102,13 @@ public class EmailJobService : IEmailJobService
             });
         }
     }
+
     public async Task SendApprovalStatusEmailAsync(Guid requisitionId)
     {
         var requisition = await _context.Requisitions
             .Include(r => r.RequestedBy)
             .Include(r => r.Approvals)
+            .ThenInclude(a => a.ApprovedBy)
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == requisitionId);
 
@@ -119,7 +120,7 @@ public class EmailJobService : IEmailJobService
         // Build remarks HTML
         string remarksHtml = "<p>No remarks available.</p>";
 
-        if (requisition.Status == "Rejected" && requisition.Approvals?.Any() == true)
+        if (requisition.Approvals?.Any() == true)
         {
             var remarksBuilder = new StringBuilder();
             remarksBuilder.Append("<ul>");
@@ -129,7 +130,7 @@ public class EmailJobService : IEmailJobService
                 if (!string.IsNullOrWhiteSpace(approval.Comments))
                 {
                     remarksBuilder.Append(
-                        $"<li><b>{approval.Comments}:</b> {approval.Comments}</li>");
+                        $"<li><b>{approval.ApprovedBy.FullName}:</b> {approval.Comments}</li>");
                 }
             }
 
@@ -189,4 +190,3 @@ public class EmailJobService : IEmailJobService
         await _emailService.SendAsync(emailDto);
     }
 }
-
