@@ -2,8 +2,10 @@
 using NexusProcure.Application.Services.Procurement;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Core.DTOs.Procurement;
+using NexusProcure.Core.DTOs.RFQ;
 using NexusProcure.Core.DTOs.Vendor;
 using NexusProcure.Core.Entities;
+using NexusProcure.Core.Entities.RequestForQuotations;
 
 namespace NexusProcure.Application;
 
@@ -53,11 +55,7 @@ public class MappingProfile : Profile
         CreateMap<Requisition, RequisitionResponseDto>()
             .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items))
             .ForMember(dest => dest.RequestedByName, opt => opt.MapFrom(src => src.RequestedBy.FullName))
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
-            .ForMember(
-                dest => dest.TotalAmount,
-                opt => opt.MapFrom(src => src.Items.Sum(i => i.EstimatedCost))
-            );
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
         
         CreateMap<User, UserResponseDto>();
 
@@ -76,5 +74,40 @@ public class MappingProfile : Profile
         
         
         CreateMap<Approval, ApprovalDto>();
+
+        CreateMap<RequestForQuotation, RfqDto>()
+            .ForMember(
+                dest => dest.TotalQuotationsRecieved,
+                opt => opt.MapFrom(src => src.Quotations.Count)
+            );
+        
+        
+        
+        
+        //Quotation Details
+        CreateMap<Quotation, QuotationDetailsDto>()
+            .ForMember(
+                dest => dest.Items,
+                opt => opt.MapFrom(src => src.Items)
+            ).ForMember(
+                dest => dest.VendorName,
+                opt => opt.MapFrom(src => src.RfqVendor.Vendor.CompanyName)
+            ).ForMember(
+                dest => dest.VendorEmail,
+                opt => opt.MapFrom(src => src.RfqVendor.Vendor.Email)
+            ).ForMember(
+                dest => dest.ContactPerson,
+                opt => opt.MapFrom(src => src.RfqVendor.Vendor.VendorName)
+            );
+        
+        CreateMap<QuotationItem, QuotationItemsDto>()
+            .ForMember(
+                dest => dest.Total,
+                opt => opt.MapFrom(src =>
+                    src.Quantity * src.UnitPrice * (1 + src.TaxPercentage / 100)
+                )
+            );
+
+
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260207051904_UpdatedRFQFK")]
+    partial class UpdatedRFQFK
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -643,9 +646,6 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsSelected")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasColumnType("text");
@@ -751,9 +751,6 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("EmailSent")
-                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");

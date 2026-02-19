@@ -42,6 +42,7 @@ public class RequisitionService : IRequisitionService
             .Include(r => r.Category)
             .Include(r => r.PurchaseOrders)
             .ThenInclude(po => po.Items)
+            .OrderByDescending(r => r.RequisitionNumber)
             .ToListAsync();
 
         return _mapper.Map<IEnumerable<RequisitionResponseDto>>(requisitions);
@@ -86,8 +87,16 @@ public class RequisitionService : IRequisitionService
                     ItemName = item.ItemName,
                     Quantity = item.Quantity,
                     EstimatedCost = item.EstimatedCost
-                }).ToList()
+                }).ToList(),
             };
+            decimal totalAmount = 0;
+
+            foreach (var item in dto.Items)
+            {
+                totalAmount += item.Quantity * item.EstimatedCost;
+            }
+
+            requisition.TotalAmount = totalAmount;
 
             // 🔹 Risk scoring
             var riskScore = await _riskScoringService.CalculateRiskScoreAsync(requisition);

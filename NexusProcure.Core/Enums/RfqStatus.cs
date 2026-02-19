@@ -5,5 +5,7 @@ public enum RfqStatus
     Open,
     Closed,
     Awarded,
-    Cancelled
+    Cancelled,
+    PendingApproval,
+    UnderReview
 }

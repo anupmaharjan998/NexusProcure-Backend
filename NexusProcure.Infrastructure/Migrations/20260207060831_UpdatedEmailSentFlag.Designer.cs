@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260207060831_UpdatedEmailSentFlag")]
+    partial class UpdatedEmailSentFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -642,9 +645,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<string>("IpAddress")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsSelected")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Notes")
                         .IsRequired()

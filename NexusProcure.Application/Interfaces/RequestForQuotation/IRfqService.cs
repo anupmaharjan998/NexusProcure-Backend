@@ -10,8 +10,17 @@ public interface IRfqService
     Task<RfqAccessToken> GenerateAccessTokenAsync(Guid rfqId, Guid vendorId);
     Task<PublicRfqDto?> GetRfqByTokenAsync(string token);
     Task<RfqTokenDto> ValidateRfqTokenAsync(string token);
-    Task SubmitQuotationAsync(string token, QuotationSubmitDto dto);
+    Task SubmitQuotationAsync(string token, QuotationSubmitDto dto, string? ipAddress);
     
     Task SubmitQuotationFromExcelAsync(string token, IFormFile file);
+    
+    
+    Task<List<RfqDto>> GetAllRfqAsync();
+    Task<QuotationListResponseDto> GetQuotationByRfqIdAsync(Guid rfqId);
+    Task<QuotationDetailsDto> GetQuotationByIdAsync(Guid quotationId);
+
+    Task<QuotationComparisonResponseDto> CompareQuotationsAsync(List<Guid> quotationIds);
+    Task SelectQuotationAsync(Guid rfqId, Guid quotationId);
+    Task ClearSelectedQuotationAsync(Guid rfqId);
 
 }

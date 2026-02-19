@@ -175,8 +175,11 @@ public class NexusProcureDbContext : DbContext
             .IsUnique();
         
         modelBuilder.Entity<Quotation>()
-            .HasIndex(q => q.RfqVendorId)
-            .IsUnique();
+            .HasOne(q => q.RequestForQuotation)
+            .WithMany(r => r.Quotations)
+            .HasForeignKey(q => q.RfqId)
+            .OnDelete(DeleteBehavior.Restrict);
+
 
         /* ===============================
            RFQ Number Sequence
