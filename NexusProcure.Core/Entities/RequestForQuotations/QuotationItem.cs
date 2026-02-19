@@ -7,6 +7,7 @@ public class QuotationItem
     public Guid QuotationId { get; set; }
 
     public string ItemName { get; set; } = null!;
+    public int Quantity { get; set; }
 
     public decimal TaxPercentage { get; set; }
     public decimal UnitPrice { get; set; }

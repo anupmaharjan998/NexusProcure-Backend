@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260206122714_UpdatedRFQColumn")]
+    partial class UpdatedRFQColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -643,12 +646,12 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsSelected")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("RequestForQuotationId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("RfqId")
                         .HasColumnType("uuid");
@@ -672,9 +675,10 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RfqId");
+                    b.HasIndex("RequestForQuotationId");
 
-                    b.HasIndex("RfqVendorId");
+                    b.HasIndex("RfqVendorId")
+                        .IsUnique();
 
                     b.ToTable("Quotations");
                 });
@@ -751,9 +755,6 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("EmailSent")
-                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
@@ -1516,19 +1517,15 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.Quotation", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", "RequestForQuotation")
+                    b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RequestForQuotation", null)
                         .WithMany("Quotations")
-                        .HasForeignKey("RfqId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("RequestForQuotationId");
 
                     b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.RfqVendor", "RfqVendor")
                         .WithMany()
                         .HasForeignKey("RfqVendorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("RequestForQuotation");
 
                     b.Navigation("RfqVendor");
                 });

@@ -1,15 +1,15 @@
 using System.Security.Claims;
 using System.Text;
 using CloudinaryDotNet;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using NexusProcure.Api.Authorization;
 using Microsoft.OpenApi.Models;
+using NexusProcure.Api.Authorization;
 using NexusProcure.Api.hangfire;
 using NexusProcure.Application;
 using NexusProcure.Application.Interfaces;
@@ -25,52 +25,51 @@ using NexusProcure.Application.Services.Procurement;
 using NexusProcure.Application.Services.RequestForQuotation;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Infrastructure.Data;
-using OfficeOpenXml;
-
+using Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
-//ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
 // Add services to the container.
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new() { Title = "NexusProcure API", Version = "v1" });
-
-    // JWT in Swagger
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your valid JWT token."
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] { }
-        }
-    });
-    // FIX: Handle IFormFile for file uploads in Swagger
-    c.MapType<IFormFile>(() => new OpenApiSchema
-    {
-        Type = "string",
-        Format = "binary"
-    });
-    
-});
+// builder.Services.AddSwaggerGen(c =>
+// {
+//     c.SwaggerDoc("v1", new() { Title = "NexusProcure API", Version = "v1" });
+//
+//     // JWT in Swagger
+//     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+//     {
+//         Name = "Authorization",
+//         Type = SecuritySchemeType.ApiKey,
+//         Scheme = "Bearer",
+//         BearerFormat = "JWT",
+//         In = ParameterLocation.Header,
+//         Description = "Enter 'Bearer' [space] and then your valid JWT token."
+//     });
+//
+//     c.AddSecurityRequirement(new OpenApiSecurityRequirement
+//     {
+//         {
+//             new OpenApiSecurityScheme
+//             {
+//                 Reference = new OpenApiReference
+//                 {
+//                     Type = ReferenceType.SecurityScheme,
+//                     Id = "Bearer"
+//                 }
+//             },
+//             new string[] { }
+//         }
+//     });
+//     // FIX: Handle IFormFile for file uploads in Swagger
+//     c.MapType<IFormFile>(() => new OpenApiSchema
+//     {
+//         Type = "string",
+//         Format = "binary"
+//     });
+//     
+// });
 
 
 // AutoMapper
@@ -137,7 +136,7 @@ builder.Services.AddSingleton(provider =>
     var url = builder.Configuration["Supabase:Url"];
     var key = builder.Configuration["Supabase:ServiceKey"];
 
-    return new Supabase.Client(url, key);
+    return new Client(url, key);
 });
 
 builder.Services.Configure<RiskScoringOptions>(
@@ -268,12 +267,12 @@ RecurringJob.AddOrUpdate<IRfqJob>(
 
 
 
-// Swagger
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// // Swagger
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI();
+// }
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");

@@ -43,7 +43,8 @@ public class PublicRfqController : BaseApiController
     [HttpPost("{token}/submit")]
     public async Task<IActionResult> SubmitQuotation(string token, [FromBody] QuotationSubmitDto dto)
     {
-        await _rfqService.SubmitQuotationAsync(token, dto);
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        await _rfqService.SubmitQuotationAsync(token, dto, ip);
 
         return Ok(new
         {
@@ -52,20 +53,27 @@ public class PublicRfqController : BaseApiController
     }
     
     [HttpGet("{token}/template")]
+    [Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
     public async Task<IActionResult> DownloadTemplate(string token)
     {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest("Token is required.");
+
         var rfq = await _rfqService.GetRfqByTokenAsync(token);
         if (rfq == null)
-            return BadRequest("Invalid token");
-    
-        var bytes = _rfqExcelService.GenerateTemplate(rfq);
-    
+            return Unauthorized("Invalid or expired RFQ token.");
+
+        var fileBytes = _rfqExcelService.GenerateTemplate(rfq);
+
+        var fileName = $"RFQ-{rfq.RfqNumber}-Quotation.xlsx";
+
         return File(
-            bytes,
+            fileBytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"RFQ-{rfq.RfqNumber}-Quotation.xlsx"
+            fileName
         );
     }
+
     
     
     [HttpPost("{token}/upload")]

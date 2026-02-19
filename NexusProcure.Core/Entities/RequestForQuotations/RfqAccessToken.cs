@@ -10,6 +10,7 @@ public class RfqAccessToken
     public string Token { get; set; } = default!;
     public DateTime ExpiresAt { get; set; }
 
+    public bool EmailSent { get; set; }
     public bool IsUsed { get; set; }
     public bool IsExpired { get; set; }
     public DateTime CreatedAt { get; set; }
