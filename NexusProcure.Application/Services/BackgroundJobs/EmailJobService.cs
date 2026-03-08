@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Core.DTOs.Email;
+using NexusProcure.Core.Enums;
 using NexusProcure.Infrastructure.Data;
 
 namespace NexusProcure.Application.Services.BackgroundJobs;
@@ -67,7 +68,7 @@ public class EmailJobService : IEmailJobService
             return;
 
         var firstRoleId = await _context.Approvals
-            .Where(a => a.RequisitionId == requisitionId && a.Status == "Pending" && a.IsActive )
+            .Where(a => a.ReferenceId == requisitionId && a.Status == "Pending" && a.IsActive )
             .Select(a => a.RoleId)
             .FirstOrDefaultAsync();
 
@@ -168,16 +169,17 @@ public class EmailJobService : IEmailJobService
     public async Task SendEscalationNotificationAsync(Guid approvalId)
     {
         var approval = await _context.Approvals
-            .Include(a => a.Requisition)
-            .ThenInclude(r => r.RequestedBy)
+            // .Include(a => a.Requisition)
+            // .ThenInclude(r => r.RequestedBy)
             //.Include(a => a.AssignedToUser)
             .FirstOrDefaultAsync(a => a.Id == approvalId);
 
         if (approval == null) return;
+        var req = await _context.Requisitions.FirstOrDefaultAsync(x => x.Id == approval.Id);
 
         // var email = approval.AssignedToUser.Email;
         var email = "mail@mail.com";
-        var subject = $"Requisition Escalated - {approval.Requisition.Id}";
+        var subject = $"Requisition Escalated - {req.Id}";
         var body = $"This requisition has been escalated due to delay. Please take action immediately.";
 
         var emailDto = new SendEmailDto
@@ -188,5 +190,64 @@ public class EmailJobService : IEmailJobService
         };
 
         await _emailService.SendAsync(emailDto);
+    }
+
+    public async Task SendQuotationApprovalEmailAsync(Guid rfqId)
+    {
+        var rfq = await _context.RequestForQuotations
+            .AsNoTracking()
+            .Include(r => r.Quotations)
+            .ThenInclude(v => v.RfqVendor)
+            .ThenInclude(r => r.Vendor)
+            .FirstOrDefaultAsync(r => r.Id == rfqId);
+
+        if (rfq == null)
+            return;
+
+        var firstRoleId = await _context.Approvals
+            .Where(a =>
+                a.ReferenceId == rfqId &&
+                a.ReferenceType == ApprovalReferenceType.RFQ &&
+                a.Status == "Pending" &&
+                a.IsActive)
+            .OrderBy(a => a.SequenceOrder)
+            .Select(a => a.RoleId)
+            .FirstOrDefaultAsync();
+
+        if (firstRoleId == Guid.Empty)
+            return;
+
+        var approvers = await _context.Users
+            .Where(u => u.RoleId == firstRoleId && u.IsActive)
+            .Select(u => new { u.Email, u.FullName })
+            .ToListAsync();
+
+        var selectedQuotation = rfq.Quotations
+            .FirstOrDefault(q => q.IsSelected);
+
+        foreach (var approver in approvers)
+        {
+            await _emailService.SendAsync(new SendEmailDto
+            {
+                To = approver.Email,
+                Subject = $"Approval Required: RFQ {rfq.RfqNumber}",
+                HtmlBody = $@"
+                <p>Dear {approver.FullName},</p>
+
+                <p>An RFQ decision requires your approval.</p>
+
+                <ul>
+                    <li><b>RFQ No:</b> {rfq.RfqNumber}</li>
+                    <li><b>Selected Vendor:</b> {selectedQuotation.RfqVendor.Vendor.CompanyName}</li>
+                    <li><b>Total Amount:</b> {selectedQuotation?.TotalAmount:N2}</li>
+                </ul>
+
+                <p>Please log in to NexusProcure to review.</p>
+
+                <br/>
+                <p><b>NexusProcure System</b></p>
+            "
+            });
+        }
     }
 }

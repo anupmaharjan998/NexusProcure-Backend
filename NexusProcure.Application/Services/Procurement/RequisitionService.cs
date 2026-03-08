@@ -146,7 +146,8 @@ public class RequisitionService : IRequisitionService
                 _context.Approvals.Add(new Approval
                 {
                     Id = Guid.NewGuid(),
-                    RequisitionId = requisition.Id,
+                    ReferenceId = requisition.Id,
+                    ReferenceType = ApprovalReferenceType.Requisition,
                     RoleId = step.RoleId,
                     Status = "Pending",
                     SequenceOrder = step.SequenceOrder,
@@ -190,7 +191,8 @@ public class RequisitionService : IRequisitionService
         var approval = new Approval
         {
             Id = Guid.NewGuid(),
-            RequisitionId = requisitionId,
+            ReferenceId = requisition.Id,
+            ReferenceType = ApprovalReferenceType.Requisition,
             ApprovedById = approvedById,
             Comments = comments
         };
@@ -222,7 +224,8 @@ public class RequisitionService : IRequisitionService
         var approval = new Approval
         {
             Id = Guid.NewGuid(),
-            RequisitionId = requisitionId,
+            ReferenceId = requisition.Id,
+            ReferenceType = ApprovalReferenceType.Requisition,
             ApprovedById = rejectedById,
             Comments = comments
         };

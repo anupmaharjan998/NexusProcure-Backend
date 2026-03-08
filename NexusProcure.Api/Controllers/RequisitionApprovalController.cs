@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Application.Services.Procurement;
+using NexusProcure.Core.Enums;
 
 namespace NexusProcure.Api.Controllers;
     
@@ -29,7 +30,7 @@ public class RequisitionApprovalController : BaseApiController
         try
         {
             var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
-            await _approvalService.ApproveAsync(id, userId, dto.Decision, dto.Comments);
+            await _approvalService.ApproveAsync(id, userId, dto.Decision, dto.Comments, ApprovalReferenceType.Requisition);
             return Ok(new { message = "Approval recorded successfully" });
         }
         catch (Exception ex)
@@ -44,5 +45,29 @@ public class RequisitionApprovalController : BaseApiController
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
         var pending = await _approvalService.GetPendingApprovalsForRoleAsync(userId);
         return Ok(pending);
+    }
+
+    [HttpGet("pending-quotation")]
+    public async Task<IActionResult> GetPendingQuotationApprovalsForRole()
+    {
+        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+        var pending = await _approvalService.GetPendingQuotationApprovalsForRoleAsync(userId);
+        return Ok(pending);
+    }
+    
+    
+    [HttpPost("{id}/approve-quotation")]
+    public async Task<IActionResult> ApproveQuotation(Guid id, [FromBody] ApprovalRequestDto dto)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+            await _approvalService.ApproveAsync(id, userId, dto.Decision, dto.Comments, ApprovalReferenceType.RFQ);
+            return Ok(new { message = "Approval recorded successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

@@ -23,4 +23,6 @@ public interface IRfqService
     Task SelectQuotationAsync(Guid rfqId, Guid quotationId);
     Task ClearSelectedQuotationAsync(Guid rfqId);
 
+    Task SubmitSelectedQuotationForApproval(Guid rfqId);
+
 }

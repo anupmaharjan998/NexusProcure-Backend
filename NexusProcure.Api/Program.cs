@@ -182,6 +182,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IEmailJobService, EmailJobService>();
 builder.Services.AddScoped<IApprovalEscalationJob, ApprovalEscalationJob>();
 builder.Services.AddScoped<IRfqJob, RfqJob>();
+builder.Services.AddScoped<IRfqApprovalJob, RfqApprovalJob>();
 
 
 builder.Services.AddScoped<HangfireJobLoggingFilter>();
