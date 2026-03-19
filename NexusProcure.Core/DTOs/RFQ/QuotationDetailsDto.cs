@@ -5,6 +5,8 @@ public class QuotationDetailsDto
     public Guid Id { get; set; }
     public string VendorName { get; set; } = null!;
     public string VendorEmail { get; set; } = null!;
+    public string VendorPhone { get; set; } = null!;
+    public string VendorAddress { get; set; } = null!;
     public string ContactPerson { get; set; } = null!;
     public DateTime SubmittedAt { get; set; }
     public DateTime DeliveryDate { get; set; }

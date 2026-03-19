@@ -19,8 +19,8 @@ public class PurchaseOrdersController : BaseApiController
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id) => Ok(await _purchaseOrderService.GetByIdAsync(id));
 
-    [HttpPost]
-    public async Task<IActionResult> Create(PurchaseOrderCreateDto dto) => Ok(await _purchaseOrderService.CreateAsync(dto));
+    // [HttpPost]
+    // public async Task<IActionResult> Create(PurchaseOrderCreateDto dto) => Ok(await _purchaseOrderService.CreateAsync(dto));
 
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, string status) =>

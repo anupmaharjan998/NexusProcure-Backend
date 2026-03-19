@@ -1,12 +1,15 @@
 ﻿using System.Security.Cryptography;
 using AutoMapper;
 using ClosedXML.Excel;
+using Hangfire;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Helper;
 using NexusProcure.Application.Interfaces.RequestForQuotation;
 using NexusProcure.Core.DTOs.RFQ;
+using NexusProcure.Core.Entities;
 using NexusProcure.Core.Entities.RequestForQuotations;
 using NexusProcure.Core.Enums;
 using NexusProcure.Infrastructure.Data;
@@ -18,12 +21,14 @@ public class RfqService : IRfqService
     private readonly NexusProcureDbContext _context;
     private readonly IRfqNumberGenerator _rfqNumberGenerator;
     private readonly IMapper _mapper;
+    private readonly IBackgroundJobClient _backgroundJobClient;
 
-    public RfqService(NexusProcureDbContext context, IRfqNumberGenerator rfqNumberGenerator, IMapper mapper)
+    public RfqService(NexusProcureDbContext context, IRfqNumberGenerator rfqNumberGenerator, IMapper mapper, IBackgroundJobClient backgroundJobClient)
     {
         _context = context;
         _rfqNumberGenerator = rfqNumberGenerator;
         _mapper = mapper;
+        _backgroundJobClient = backgroundJobClient;
     }
 
 
@@ -574,7 +579,7 @@ public class RfqService : IRfqService
 
             //SubTotal = q.SubTotal,
             
-            GrandTotal = q.TotalAmount,
+            TotalAmount = q.TotalAmount,
 
             //Status = q.Status.ToString(),
 
@@ -593,7 +598,7 @@ public class RfqService : IRfqService
             }).ToList()
         }).ToList();
 
-        var totals = quotationDtos.Select(q => q.GrandTotal).ToList();
+        var totals = quotationDtos.Select(q => q.TotalAmount).ToList();
 
         var lowest = totals.Min();
         var highest = totals.Max();
@@ -615,28 +620,50 @@ public class RfqService : IRfqService
     
     public async Task SelectQuotationAsync(Guid rfqId, Guid quotationId)
     {
-        var rfq = await _context.RequestForQuotations
-            .Include(r => r.Quotations)
-            .FirstOrDefaultAsync(r => r.Id == rfqId);
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
 
-        if (rfq == null)
-            throw new Exception("RFQ not found");
+        try
+        {
+            var rfq = await _context.RequestForQuotations
+                .Include(r => r.Quotations)
+                .FirstOrDefaultAsync(r => r.Id == rfqId);
 
-        var quotation = rfq.Quotations
-            .FirstOrDefault(q => q.Id == quotationId);
+            if (rfq == null)
+                throw new Exception("RFQ not found");
 
-        if (quotation == null)
-            throw new Exception("Quotation not found");
+            //if (rfq.Status != RfqStatus.UnderReview)
+                //throw new Exception("RFQ is not eligible for selection");
 
-        // Mark selected
-        foreach (var q in rfq.Quotations)
-            q.IsSelected = false;
+            var quotation = rfq.Quotations
+                .FirstOrDefault(q => q.Id == quotationId);
 
-        quotation.IsSelected = true;
+            if (quotation == null)
+                throw new Exception("Quotation not found");
 
-        rfq.Status = RfqStatus.PendingApproval;
+            // Reset all selections
+            foreach (var q in rfq.Quotations)
+                q.IsSelected = false;
 
-        await _context.SaveChangesAsync();
+            quotation.IsSelected = true;
+
+            rfq.Status = RfqStatus.PendingApproval;
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+
+        // ----------------------------------------
+        // ENQUEUE APPROVAL CREATION AFTER COMMIT
+        // ----------------------------------------
+
+        _backgroundJobClient.Enqueue<IRfqApprovalJob>(
+            job => job.SubmitSelectedQuotationForApprovalAsync(rfqId));
     }
     
     
@@ -652,6 +679,56 @@ public class RfqService : IRfqService
         rfq.Status = RfqStatus.UnderReview;
     
         await _context.SaveChangesAsync();
+    }
+    
+    
+    public async Task SubmitSelectedQuotationForApproval(Guid rfqId)
+    {
+        var existing = await _context.Approvals
+            .AnyAsync(a =>
+                a.ReferenceId == rfqId &&
+                a.ReferenceType == ApprovalReferenceType.RFQ);
+
+        if (existing)
+            return; // Already submitted
+
+        var rfq = await _context.RequestForQuotations
+            .Include(r => r.Quotations)
+            .FirstAsync(r => r.Id == rfqId);
+
+        var selected = rfq.Quotations
+            .FirstOrDefault(q => q.IsSelected);
+
+        if (selected == null)
+            throw new Exception("No selected quotation");
+
+        var requisition = await _context.Requisitions
+            .FirstAsync(r => r.Id == rfq.RequisitionId);
+
+        var policies = await _context.ApprovalPolicies
+            .Where(p =>
+                p.CategoryId == requisition.CategoryId &&
+                p.IsActive)
+            .OrderBy(p => p.SequenceOrder)
+            .ToListAsync();
+
+        var approvals = policies.Select(p => new Approval
+        {
+            Id = Guid.NewGuid(),
+            ReferenceId = rfq.Id,
+            ReferenceType = ApprovalReferenceType.RFQ,
+            RoleId = p.RoleId,
+            SequenceOrder = p.SequenceOrder,
+            AssignedAt = DateTime.UtcNow,
+            Status = "Pending",
+            IsActive = p.SequenceOrder == 1
+        }).ToList();
+
+        _context.Approvals.AddRange(approvals);
+
+        await _context.SaveChangesAsync();
+        
+        BackgroundJob.Enqueue<IEmailJobService>(job => job.SendQuotationApprovalEmailAsync(rfqId));
     }
 
 

@@ -37,7 +37,7 @@ public class AuthService : IAuthService
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
             return null;
 
-        var token = JwtTokenGenerator.GenerateToken(user, _config["Jwt:Key"]!);
+        var token = JwtTokenGenerator.GenerateToken(user, _config["Jwt:Key"]!, int.Parse(_config["Jwt:ExpireMinutes"]!));
         
         var permissions = await  _context.RolePermissions.Where(x=>x.RoleId == user.RoleId)
             .Include(p=>p.Permission)

@@ -58,6 +58,14 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
         
         CreateMap<User, UserResponseDto>();
+        
+        
+// Quotation -> QuotationResponseDto
+        CreateMap<Quotation, QuotationApprovalListResponseDto>()
+            .ForMember(dest => dest.RfqNumber, opt => opt.MapFrom(src => src.RequestForQuotation.RfqNumber))
+            .ForMember(dest => dest.VendorName, opt => opt.MapFrom(src => src.RfqVendor.Vendor.CompanyName))
+            .ForMember(dest => dest.ContactPerson, opt => opt.MapFrom(src => src.RfqVendor.Vendor.VendorName))
+            .ForMember(dest => dest.RfqNumber, opt => opt.MapFrom(src => src.RequestForQuotation.RfqNumber));
 
 
 // Optionally, also map nested PurchaseOrderItem if needed
@@ -98,6 +106,12 @@ public class MappingProfile : Profile
             ).ForMember(
                 dest => dest.ContactPerson,
                 opt => opt.MapFrom(src => src.RfqVendor.Vendor.VendorName)
+            ).ForMember(
+                dest => dest.VendorPhone,
+                opt => opt.MapFrom(src => src.RfqVendor.Vendor.PhoneNumber)
+            ).ForMember(
+                dest => dest.VendorAddress,
+                opt => opt.MapFrom(src => src.RfqVendor.Vendor.Address)
             );
         
         CreateMap<QuotationItem, QuotationItemsDto>()

@@ -85,7 +85,12 @@ public class NexusProcureDbContext : DbContext
         
 
         
-        // PR → PO (1-M)
+        // PR → PO 
+        modelBuilder.HasSequence<long>("purchase_order_number_seq")
+            .StartsAt(1)
+            .IncrementsBy(1);
+        
+        
         modelBuilder.Entity<PurchaseOrder>()
             .HasOne(po => po.Requisition)
             .WithMany(r => r.PurchaseOrders)

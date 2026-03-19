@@ -7,4 +7,6 @@ public interface IEmailJobService
     Task SendApprovalNotificationAsync(Guid requisitionId);
     Task SendApprovalStatusEmailAsync(Guid requisitionId);
     Task SendEscalationNotificationAsync(Guid approvalId);
+    
+    Task SendQuotationApprovalEmailAsync(Guid rfqId);
 }

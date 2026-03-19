@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces.Procurement;
+using NexusProcure.Core.Enums;
 
 namespace NexusProcure.Api.Controllers;
 

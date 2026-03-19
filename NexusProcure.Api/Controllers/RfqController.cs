@@ -43,7 +43,7 @@ public class RfqController : BaseApiController
     }
 
     [HttpPost("{rfqId}/select-quotation")]
-    public async Task<IActionResult> SelectQuotation(Guid rfqId,[FromBody] Guid quotationId)
+    public async Task<IActionResult> SelectQuotation(Guid rfqId, Guid quotationId)
     {
         await _rfqService.SelectQuotationAsync(rfqId, quotationId);
         return NoContent();

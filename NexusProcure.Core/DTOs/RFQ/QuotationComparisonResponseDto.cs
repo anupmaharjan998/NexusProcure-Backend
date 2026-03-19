@@ -27,7 +27,7 @@ public class QuotationDetailResponseDto
 
     //public decimal SubTotal { get; set; }
     
-    public decimal GrandTotal { get; set; }
+    public decimal TotalAmount { get; set; }
 
     //public string Status { get; set; }
 

@@ -1,12 +1,19 @@
-﻿namespace NexusProcure.Core.Entities;
+﻿using NexusProcure.Core.Enums;
+
+namespace NexusProcure.Core.Entities;
 
 public class Approval
 {
     public Guid Id { get; set; }
 
-    public Guid RequisitionId { get; set; }
-    public Requisition Requisition { get; set; }
+    // public Guid RequisitionId { get; set; }
+    // public Requisition Requisition { get; set; }    
 
+    
+    public Guid ReferenceId { get; set; }
+    public ApprovalReferenceType ReferenceType { get; set; }
+
+    
     public Guid RoleId { get; set; }
     public Role Role { get; set; }
 
