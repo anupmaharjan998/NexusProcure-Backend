@@ -160,6 +160,7 @@ builder.Services.AddScoped<IRiskScoringService, RiskScoringService>();
 builder.Services.AddScoped<IDelegationService, DelegationService>();
 builder.Services.AddScoped<ITotalAmountRiskScoreService, TotalAmountRiskScoreService>();
 builder.Services.AddScoped<IRequisitionNumberGenerator, RequisitionNumberGenerator>();
+builder.Services.AddScoped<IPurchaseOrderNumberGenerator, PurchaseOrderNumberGenerator>();
 builder.Services.AddScoped<IRfqNumberGenerator, RfqNumberGenerator>();
 builder.Services.AddScoped<IRfqService, RfqService>();
 builder.Services.AddScoped<IRfqExcelService, RfqExcelService>();
@@ -183,6 +184,7 @@ builder.Services.AddScoped<IEmailJobService, EmailJobService>();
 builder.Services.AddScoped<IApprovalEscalationJob, ApprovalEscalationJob>();
 builder.Services.AddScoped<IRfqJob, RfqJob>();
 builder.Services.AddScoped<IRfqApprovalJob, RfqApprovalJob>();
+builder.Services.AddScoped<IPurchaseRequestJob, PurchaseRequestJob>();
 
 
 builder.Services.AddScoped<HangfireJobLoggingFilter>();
@@ -262,6 +264,12 @@ RecurringJob.AddOrUpdate<IApprovalEscalationJob>(
 RecurringJob.AddOrUpdate<IRfqJob>(
     "rfq-closing-job",
     job => job.ValidateTokenAsync(),
+    Cron.Daily
+);
+
+RecurringJob.AddOrUpdate<IPurchaseRequestJob>(
+    "purchase-order-receiving",
+    job => job.RunAsync(),
     Cron.Daily
 );
 

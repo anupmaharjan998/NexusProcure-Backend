@@ -232,13 +232,14 @@ namespace NexusProcure.Application.Services.Procurement
             bool sendNextStepEmail = false;
             bool createRfq = false;
             bool createPurchaseRequest = false;
-
+            var refId = referenceId;
+            
             try
             {
                 var user = await _context.Users
                     .SingleAsync(u => u.Id == approverId);
 
-                var refId = referenceId;
+                
                 if (referenceType == ApprovalReferenceType.RFQ)
                 {
                     var rfqid = await _context.Quotations.Where(x => x.Id == referenceId).Select(r => r.RfqId).FirstOrDefaultAsync();
@@ -261,13 +262,13 @@ namespace NexusProcure.Application.Services.Procurement
 
                 if (decision == "Rejected")
                 {
-                    await UpdateReferenceStatus(referenceId, referenceType, "Rejected");
+                    await UpdateReferenceStatus(refId, referenceType, "Rejected");
                     sendStatusEmail = true;
                 }
                 else
                 {
                     bool stepCompleted = !await _context.Approvals.AnyAsync(a =>
-                        a.ReferenceId == referenceId &&
+                        a.ReferenceId == refId &&
                         a.ReferenceType == referenceType &&
                         a.SequenceOrder == approval.SequenceOrder &&
                         a.Status == "Pending");
@@ -278,7 +279,7 @@ namespace NexusProcure.Application.Services.Procurement
 
                         var nextApprovals = await _context.Approvals
                             .Where(a =>
-                                a.ReferenceId == referenceId &&
+                                a.ReferenceId == refId &&
                                 a.ReferenceType == referenceType &&
                                 a.SequenceOrder == nextStep)
                             .ToListAsync();
@@ -295,7 +296,7 @@ namespace NexusProcure.Application.Services.Procurement
                         else
                         {
                             // Final Approval
-                            await UpdateReferenceStatus(referenceId, referenceType, "Approved");
+                            await UpdateReferenceStatus(refId, referenceType, "Approved");
                             sendStatusEmail = true;
 
                             if (referenceType == ApprovalReferenceType.Requisition)
@@ -304,11 +305,6 @@ namespace NexusProcure.Application.Services.Procurement
                             if (referenceType == ApprovalReferenceType.RFQ)
                                 createPurchaseRequest = true;
                         }
-                    }
-
-                    if (referenceType == ApprovalReferenceType.RFQ)
-                    {
-                        createPurchaseRequest = true;
                     }
                 }
 
@@ -330,10 +326,13 @@ namespace NexusProcure.Application.Services.Procurement
                 if (referenceType == ApprovalReferenceType.Requisition)
                 {
                     BackgroundJob.Enqueue<IEmailJobService>(job =>
-                        job.SendApprovalStatusEmailAsync(referenceId));
+                        job.SendApprovalStatusEmailAsync(refId));
                 }
-                BackgroundJob.Enqueue<IEmailJobService>(job =>
-                    job.SendQuotationApprovalEmailAsync(referenceId));
+                else
+                {
+                    BackgroundJob.Enqueue<IEmailJobService>(job =>
+                        job.SendQuotationApprovalEmailAsync(refId));
+                }
             }
 
             if (sendNextStepEmail)
@@ -341,10 +340,9 @@ namespace NexusProcure.Application.Services.Procurement
                 if (referenceType == ApprovalReferenceType.Requisition)
                 {
                     BackgroundJob.Enqueue<IEmailJobService>(job =>
-                        job.SendApprovalNotificationAsync(referenceId));
+                        job.SendApprovalNotificationAsync(refId));
                 }
-                BackgroundJob.Enqueue<IEmailJobService>(job =>
-                    job.SendQuotationApprovalEmailAsync(referenceId));
+                
             }
 
             if (createRfq)
@@ -352,14 +350,14 @@ namespace NexusProcure.Application.Services.Procurement
                 if (referenceType == ApprovalReferenceType.Requisition)
                 {
                     BackgroundJob.Enqueue<IRfqJob>(job =>
-                        job.CreateAndSendRfqAsync(referenceId));
+                        job.CreateAndSendRfqAsync(refId));
                 }
                 
             }
 
             if (createPurchaseRequest)
             {
-                //BackgroundJob.Enqueue<IPurchaseRequestJob>(job => job.CreatePurchaseRequestAsync(referenceId));
+                BackgroundJob.Enqueue<IPurchaseRequestJob>(job => job.CreatePurchaseRequestAsync(refId));
             }
         }
 
@@ -381,7 +379,14 @@ namespace NexusProcure.Application.Services.Procurement
             {
                 var rfq = await _context.RequestForQuotations
                     .FirstAsync(r => r.Id == referenceId);
-                rfq.Status = Enum.Parse<RfqStatus>(status);
+                if (status == "Approved")
+                {
+                    rfq.Status = RfqStatus.Awarded;
+                }
+                else
+                {
+                    rfq.Status = Enum.Parse<RfqStatus>(status);
+                }
             }
 
             // if (referenceType == ApprovalReferenceType.PurchaseRequest)

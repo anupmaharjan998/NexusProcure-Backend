@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314140712_AddedPurchaseOrderNumber")]
+    partial class AddedPurchaseOrderNumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -586,15 +589,6 @@ namespace NexusProcure.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeliveryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeliveryStatus")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -608,17 +602,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<Guid>("RequisitionId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("SubTotal")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("Vat")
-                        .HasColumnType("numeric");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid>("VendorId")
                         .HasColumnType("uuid");
@@ -644,17 +630,11 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<decimal>("LineTotal")
-                        .HasColumnType("numeric");
-
                     b.Property<Guid>("PurchaseOrderId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
-
-                    b.Property<decimal>("TaxPercentage")
-                        .HasColumnType("numeric");
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric");

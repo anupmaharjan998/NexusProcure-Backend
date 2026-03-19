@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314162046_UpdatePurchaseOrder")]
+    partial class UpdatePurchaseOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -652,9 +655,6 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
-
-                    b.Property<decimal>("TaxPercentage")
-                        .HasColumnType("numeric");
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric");
@@ -1303,7 +1303,7 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("a87f3d2b-0f0d-4b4e-9d2a-4e09d68f4104"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 3, 14, 16, 20, 44, 765, DateTimeKind.Utc).AddTicks(8637),
                             Email = "admin@nexusprocure.com",
                             FullName = "",
                             IsActive = false,
@@ -1316,7 +1316,7 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("a87f3d2b-0f0d-4b4e-9d2a-4e09d68f4103"),
-                            CreatedAt = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            CreatedAt = new DateTime(2026, 3, 14, 16, 20, 44, 766, DateTimeKind.Utc).AddTicks(491),
                             Email = "admin@mail.com",
                             FullName = "",
                             IsActive = false,

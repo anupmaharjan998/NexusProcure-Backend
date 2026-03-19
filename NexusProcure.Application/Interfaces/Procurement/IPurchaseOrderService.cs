@@ -1,12 +1,12 @@
-﻿using NexusProcure.Core.DTOs.Procurement;
+﻿using NexusProcure.Core.DTOs.PurchaseOrder;
 using NexusProcure.Core.Entities;
 
 namespace NexusProcure.Application.Interfaces.Procurement;
 
 public interface IPurchaseOrderService
 {
-    Task<List<PurchaseOrder>> GetAllAsync();
-    Task<PurchaseOrder> GetByIdAsync(Guid id);
-    Task<PurchaseOrder> CreateAsync(PurchaseOrderCreateDto dto);
-    Task<PurchaseOrder> UpdateStatusAsync(Guid id, string status);
+    Task<PurchaseOrderListResponse> GetAllAsync();
+    Task<PurchaseOrderDto> GetByIdAsync(Guid id);
+    Task<PurchaseOrder> CreateAsync(Guid referenceId);
+    Task<PurchaseOrderDto> UpdateStatusAsync(Guid id, string status);
 }
