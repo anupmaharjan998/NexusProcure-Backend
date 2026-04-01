@@ -4,5 +4,5 @@ namespace NexusProcure.Application.Interfaces;
 
 public interface IDashboardService
 {
-    Task<DashboardStatsDto> GetStatsAsync();
+    Task<DashboardResponseDto> GetDashboardAsync();
 }

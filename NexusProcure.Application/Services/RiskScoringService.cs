@@ -36,7 +36,7 @@ public class RiskScoringService : IRiskScoringService
         }
 
         // 2️⃣ Category Risk
-        var categoryRisk = await _context.Categories
+        var categoryRisk = await _context.InventoryCategories
             .Where(c => c.Id == requisition.CategoryId)
             .Select(c => c.RiskWeight)
             .FirstOrDefaultAsync();
@@ -86,7 +86,7 @@ public class RiskScoringService : IRiskScoringService
         else score += 10;
 
         // 2️⃣ Category risk (dynamic)
-        var categoryRisk = await _context.Categories
+        var categoryRisk = await _context.InventoryCategories
             .Where(c => c.Id == requisition.CategoryId)
             .Select(c => c.RiskWeight)
             .FirstOrDefaultAsync();

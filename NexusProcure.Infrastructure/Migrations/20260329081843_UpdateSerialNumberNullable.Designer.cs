@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260329081843_UpdateSerialNumberNullable")]
+    partial class UpdateSerialNumberNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1678,6 +1681,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CategoryId1")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("CompanyName")
                         .HasColumnType("text");
 
@@ -1686,9 +1692,6 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
-
-                    b.Property<Guid?>("InventoryCategoryId")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("PaymentTerms")
                         .IsRequired()
@@ -1720,24 +1723,9 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("InventoryCategoryId");
+                    b.HasIndex("CategoryId1");
 
                     b.ToTable("Vendors");
-                });
-
-            modelBuilder.Entity("NexusProcure.Core.Entities.VendorCategory", b =>
-                {
-                    b.Property<Guid>("VendorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("VendorId", "CategoryId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.ToTable("VendorCategory");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.VendorDocument", b =>
@@ -2136,32 +2124,16 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
                 {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
+                        .WithMany("Vendors")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("NexusProcure.Core.Entities.Category", null)
                         .WithMany("Vendors")
-                        .HasForeignKey("CategoryId");
-
-                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", null)
-                        .WithMany("Vendors")
-                        .HasForeignKey("InventoryCategoryId");
-                });
-
-            modelBuilder.Entity("NexusProcure.Core.Entities.VendorCategory", b =>
-                {
-                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
-                        .WithMany("VendorCategories")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("NexusProcure.Core.Entities.Vendor", "Vendor")
-                        .WithMany("VendorCategories")
-                        .HasForeignKey("VendorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CategoryId1");
 
                     b.Navigation("Category");
-
-                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.VendorDocument", b =>
@@ -2197,8 +2169,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Navigation("Items");
 
                     b.Navigation("SubCategories");
-
-                    b.Navigation("VendorCategories");
 
                     b.Navigation("Vendors");
                 });
@@ -2256,8 +2226,6 @@ namespace NexusProcure.Infrastructure.Migrations
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
                 {
                     b.Navigation("Documents");
-
-                    b.Navigation("VendorCategories");
                 });
 #pragma warning restore 612, 618
         }

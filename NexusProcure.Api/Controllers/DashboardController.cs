@@ -15,7 +15,7 @@ public class DashboardController : BaseApiController
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
-        var stats = await _dashboardService.GetStatsAsync();
+        var stats = await _dashboardService.GetDashboardAsync();
         return Ok(stats);
     }
 }

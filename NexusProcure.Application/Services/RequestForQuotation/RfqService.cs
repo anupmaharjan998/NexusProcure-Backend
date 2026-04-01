@@ -52,7 +52,7 @@ public class RfqService : IRfqService
             var vendors = await _context.Vendors
                 .Where(v =>
                     v.Status == "Active" &&
-                    v.CategoryId == requisition.CategoryId)
+                    v.VendorCategories.Any(x => x.CategoryId == requisition.CategoryId))
                 .ToListAsync();
 
             if (!vendors.Any())

@@ -57,7 +57,8 @@ public class VendorService : IVendorService
     public async Task<VendorResponseDto?> GetVendorByIdAsync(Guid id)
     {
         var vendor = await _context.Vendors
-        .Include(c => c.Category)
+            .Include(c => c.VendorCategories)
+            .ThenInclude(vc => vc.Category)
             .Include(v => v.Documents)
             .AsNoTracking()
             .FirstOrDefaultAsync(v => v.Id == id);
@@ -71,7 +72,7 @@ public class VendorService : IVendorService
     public async Task<IEnumerable<VendorResponseDto>> GetAllVendorsAsync(string? status = null, string? search = null)
     {
         var q = _context.Vendors.Include(v => v.Documents)
-            .Include(c => c.Category).AsQueryable();
+            .Include(c => c.VendorCategories).AsQueryable();
         if (!string.IsNullOrEmpty(status)) q = q.Where(v => v.Status == status);
         if (!string.IsNullOrEmpty(search))
             q = q.Where(v => v.VendorName.Contains(search) || v.CompanyName.Contains(search));
@@ -150,7 +151,7 @@ public class VendorService : IVendorService
         await _context.SaveChangesAsync();
         return true;
     }
-    
+
     public async Task<(byte[] Data, string ContentType, string FileName)> DownloadVendorDocumentAsync(Guid documentId)
     {
         var doc = await _context.VendorDocuments.FindAsync(documentId);
@@ -163,5 +164,4 @@ public class VendorService : IVendorService
 
         return (data, doc.FileType, doc.FileName);
     }
-
 }
