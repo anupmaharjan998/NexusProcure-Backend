@@ -12,7 +12,7 @@ public class VendorRequestDto
     public string? Address { get; set; }
     public TaxType? TaxType { get; set; }
     public string? TaxId { get; set; }
-    public Guid CategoryId { get; set; }
+    public List<Guid> CategoryIds { get; set; }
     public string? BankName { get; set; }
     public string? BankBranch { get; set; }
     public string? BankAccount { get; set; }

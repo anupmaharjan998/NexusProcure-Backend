@@ -27,23 +27,123 @@ public class VendorService : IVendorService
         _supabase = supabase;
     }
 
-    public async Task<VendorResponseDto> CreateVendorAsync(VendorRequestDto dto)
-    {
-        var vendor = _mapper.Map<Vendor>(dto);
-        _context.Vendors.Add(vendor);
-        await _context.SaveChangesAsync();
-        return _mapper.Map<VendorResponseDto>(vendor);
-    }
-
-    public async Task<VendorResponseDto?> UpdateVendorAsync(Guid id, VendorRequestDto dto)
-    {
-        var vendor = await _context.Vendors.FindAsync(id);
-        if (vendor == null) return null;
-        _mapper.Map(dto, vendor);
-        vendor.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-        return _mapper.Map<VendorResponseDto>(vendor);
-    }
+    // public async Task<VendorResponseDto> CreateVendorAsync(VendorRequestDto dto)
+    // {
+    //     var vendor = _mapper.Map<Vendor>(dto);
+    //     _context.Vendors.Add(vendor);
+    //     await _context.SaveChangesAsync();
+    //     return _mapper.Map<VendorResponseDto>(vendor);
+    // }
+    //
+    // public async Task<VendorResponseDto?> UpdateVendorAsync(Guid id, VendorRequestDto dto)
+    // {
+    //     var vendor = await _context.Vendors.FindAsync(id);
+    //     if (vendor == null) return null;
+    //     _mapper.Map(dto, vendor);
+    //     vendor.UpdatedAt = DateTime.UtcNow;
+    //     await _context.SaveChangesAsync();
+    //     return _mapper.Map<VendorResponseDto>(vendor);
+    // }
+    
+     public async Task<VendorResponseDto> CreateVendorAsync(VendorRequestDto dto)
+        {
+            var vendor = _mapper.Map<Vendor>(dto);
+            vendor.Id = Guid.NewGuid();
+            vendor.CreatedAt = DateTime.UtcNow;
+            vendor.UpdatedAt = DateTime.UtcNow;
+    
+            vendor.VendorCategories = dto.CategoryIds
+                .Distinct()
+                .Select(categoryId => new VendorCategory
+                {
+                    VendorId = vendor.Id,
+                    CategoryId = categoryId
+                })
+                .ToList();
+    
+            _context.Vendors.Add(vendor);
+            await _context.SaveChangesAsync();
+    
+            var createdVendor = await _context.Vendors
+                .Include(v => v.VendorCategories)
+                    .ThenInclude(vc => vc.Category)
+                .Include(v => v.Documents)
+                .AsNoTracking()
+                .FirstAsync(v => v.Id == vendor.Id);
+    
+            return _mapper.Map<VendorResponseDto>(createdVendor);
+        }
+    
+        public async Task<VendorResponseDto?> UpdateVendorAsync(Guid id, VendorRequestDto dto)
+        {
+            var vendor = await _context.Vendors
+                .Include(v => v.VendorCategories)
+                .Include(v => v.Documents)
+                .FirstOrDefaultAsync(v => v.Id == id);
+    
+            if (vendor == null) return null;
+    
+            // update scalar fields
+            vendor.VendorName = dto.VendorName;
+            vendor.CompanyName = dto.CompanyName;
+            vendor.Email = dto.Email;
+            vendor.PhoneNumber = dto.PhoneNumber;
+            vendor.Address = dto.Address;
+            vendor.TaxId = dto.TaxId;
+            vendor.TaxType = dto.TaxType;
+            vendor.Status = dto.Status;
+            vendor.BankName = dto.BankName;
+            vendor.BankBranch = dto.BankBranch;
+            vendor.BankAccount = dto.BankAccount;
+            vendor.PaymentTerms = dto.PaymentTerms;
+            vendor.UpdatedAt = DateTime.UtcNow;
+    
+            // sync many-to-many VendorCategories
+            var incomingCategoryIds = dto.CategoryIds
+                .Distinct()
+                .ToHashSet();
+    
+            var existingCategoryIds = vendor.VendorCategories
+                .Select(vc => vc.CategoryId)
+                .ToHashSet();
+    
+            var categoriesToRemove = vendor.VendorCategories
+                .Where(vc => !incomingCategoryIds.Contains(vc.CategoryId))
+                .ToList();
+    
+            if (categoriesToRemove.Count > 0)
+            {
+                _context.RemoveRange(categoriesToRemove);
+            }
+    
+            var categoriesToAdd = incomingCategoryIds
+                .Where(categoryId => !existingCategoryIds.Contains(categoryId))
+                .Select(categoryId => new VendorCategory
+                {
+                    VendorId = vendor.Id,
+                    CategoryId = categoryId
+                })
+                .ToList();
+    
+            if (categoriesToAdd.Count > 0)
+            {
+                foreach (var vendorCategory in categoriesToAdd)
+                {
+                    vendor.VendorCategories.Add(vendorCategory);
+                }
+            }
+    
+            await _context.SaveChangesAsync();
+    
+            var updatedVendor = await _context.Vendors
+                .Include(v => v.VendorCategories)
+                    .ThenInclude(vc => vc.Category)
+                .Include(v => v.Documents)
+                .AsNoTracking()
+                .FirstAsync(v => v.Id == id);
+    
+            return _mapper.Map<VendorResponseDto>(updatedVendor);
+        }
 
     public async Task<bool> DeleteVendorAsync(Guid id)
     {
@@ -69,17 +169,48 @@ public class VendorService : IVendorService
     }
 
 
+    // public async Task<IEnumerable<VendorResponseDto>> GetAllVendorsAsync(string? status = null, string? search = null)
+    // {
+    //     var q = _context.Vendors.Include(v => v.Documents)
+    //         .Include(c => c.VendorCategories).AsQueryable();
+    //     if (!string.IsNullOrEmpty(status)) q = q.Where(v => v.Status == status);
+    //     if (!string.IsNullOrEmpty(search))
+    //         q = q.Where(v => v.VendorName.Contains(search) || v.CompanyName.Contains(search));
+    //     return await q.OrderByDescending(v => v.CreatedAt)
+    //         .Select(v => _mapper.Map<VendorResponseDto>(v))
+    //         .ToListAsync();
+    // }
+    
     public async Task<IEnumerable<VendorResponseDto>> GetAllVendorsAsync(string? status = null, string? search = null)
-    {
-        var q = _context.Vendors.Include(v => v.Documents)
-            .Include(c => c.VendorCategories).AsQueryable();
-        if (!string.IsNullOrEmpty(status)) q = q.Where(v => v.Status == status);
-        if (!string.IsNullOrEmpty(search))
-            q = q.Where(v => v.VendorName.Contains(search) || v.CompanyName.Contains(search));
-        return await q.OrderByDescending(v => v.CreatedAt)
-            .Select(v => _mapper.Map<VendorResponseDto>(v))
-            .ToListAsync();
-    }
+        {
+            var query = _context.Vendors
+                .Include(v => v.Documents)
+                .Include(v => v.VendorCategories)
+                    .ThenInclude(vc => vc.Category)
+                .AsNoTracking()
+                .AsQueryable();
+    
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(v => v.Status == status);
+            }
+    
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTerm = search.Trim();
+    
+                query = query.Where(v =>
+                    v.VendorName.Contains(searchTerm) ||
+                    (v.CompanyName != null && v.CompanyName.Contains(searchTerm)) ||
+                    (v.Email != null && v.Email.Contains(searchTerm)));
+            }
+    
+            var vendors = await query
+                .OrderByDescending(v => v.CreatedAt)
+                .ToListAsync();
+    
+            return _mapper.Map<List<VendorResponseDto>>(vendors);
+        }
 
     public async Task<bool> UpdateVendorStatusAsync(Guid id, string status)
     {

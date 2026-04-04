@@ -109,6 +109,22 @@ public class InventoryController : BaseApiController
         return Ok();
     }
     
+    /* ---------------- Get Leaf Categories ---------------- */
+    [HttpGet("get-leaf-categories-dropdown")]
+    public async Task<IActionResult> GetLeafCategoriesForDropDown()
+    {
+        var result = await _inventoryService.GetLeafCategoriesAsync();
+        return Ok(result);
+    }
+
+    /* ---------------- Get Items By Category ---------------- */
+    [HttpGet("items/by-category/{categoryId}")]
+    public async Task<IActionResult> GetItemsByCategory(Guid categoryId)
+    {
+        var result = await _inventoryService.GetItemsByCategoryAsync(categoryId);
+        return Ok(result);
+    }
+    
     
 
     #endregion
@@ -121,6 +137,13 @@ public class InventoryController : BaseApiController
     {
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
         var result = await _inventoryService.CreateItemAsync(dto, userId);
+        return Ok(result);
+    }
+    [HttpPut("update-item/{id}")]
+    public async Task<IActionResult> UpdateItem(Guid id, [FromBody] UpdateInventoryItemDto dto)
+    {
+        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+        var result = await _inventoryService.UpdateItemAsync(id, dto, userId);
         return Ok(result);
     }
     

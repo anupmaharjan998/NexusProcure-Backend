@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces.Inventory;
+using NexusProcure.Core.DTOs.Category;
 using NexusProcure.Core.DTOs.Common;
 using NexusProcure.Core.DTOs.Inventory;
 using NexusProcure.Core.Entities.Inventory;
@@ -200,8 +201,8 @@ public class InventoryService : IInventoryService
             itemsQuery = query.Status switch
             {
                 "Assigned" => itemsQuery.Where(x => x.Status == "Assigned"),
-                "Available" => itemsQuery.Where(x => x.Status == "Available" ),
-                "Maintenance" => itemsQuery.Where(x => x.Status == "Maintenance" ),
+                "Available" => itemsQuery.Where(x => x.Status == "Available"),
+                "Maintenance" => itemsQuery.Where(x => x.Status == "Maintenance"),
                 _ => itemsQuery
             };
         }
@@ -220,8 +221,10 @@ public class InventoryService : IInventoryService
                 SKU = x.SKU,
                 Name = x.Name,
                 Category = x.InventoryCategory.Name,
-
-                Status = x.Status
+                SerialNumber = x.SerialNumber,
+                Location = x.Location,
+                Status = x.Status,
+                AssignedTo = x.AssignedTo.FullName,
             })
             .ToListAsync();
 
@@ -231,7 +234,7 @@ public class InventoryService : IInventoryService
         var assigned = await _context.InventoryItems
             .Where(x => x.Status == "Assigned")
             .CountAsync();
-        
+
         var available = await _context.InventoryItems
             .Where(x => x.Status == "Available")
             .CountAsync();
@@ -261,103 +264,102 @@ public class InventoryService : IInventoryService
     #region Category
 
     public async Task<CategoryPagedResponse> GetCategoriesAsync(CategoryQueryParams query)
-{
-    // 🔹 BASE QUERY (ROOT ONLY)
-    var baseQuery = _context.InventoryCategories
-        .Where(c => c.ParentCategoryId == null)
-        .AsQueryable();
-
-    // 🔍 SEARCH (including subcategories)
-    if (!string.IsNullOrWhiteSpace(query.Search))
     {
-        var search = query.Search.ToLower();
+        // 🔹 BASE QUERY (ROOT ONLY)
+        var baseQuery = _context.InventoryCategories
+            .Where(c => c.ParentCategoryId == null)
+            .AsQueryable();
 
-        baseQuery = baseQuery.Where(c =>
-            c.Name.ToLower().Contains(search) ||
-            c.CategoryCode.ToLower().Contains(search) ||
+        // 🔍 SEARCH (including subcategories)
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var search = query.Search.ToLower();
 
-            _context.InventoryCategories.Any(sc =>
-                sc.ParentCategoryId == c.Id &&
-                (
-                    sc.Name.ToLower().Contains(search) ||
-                    sc.CategoryCode.ToLower().Contains(search)
+            baseQuery = baseQuery.Where(c =>
+                c.Name.ToLower().Contains(search) ||
+                c.CategoryCode.ToLower().Contains(search) ||
+                _context.InventoryCategories.Any(sc =>
+                    sc.ParentCategoryId == c.Id &&
+                    (
+                        sc.Name.ToLower().Contains(search) ||
+                        sc.CategoryCode.ToLower().Contains(search)
+                    )
                 )
-            )
-        );
+            );
+        }
+
+        // ✅ TOTAL COUNT (after filter)
+        var totalCount = await baseQuery.CountAsync();
+
+        // ✅ PAGINATED DATA (NO INCLUDE → PURE PROJECTION)
+        var categories = await baseQuery
+            .OrderByDescending(c => c.CreatedAt)
+            .Skip((query.PageNumber - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(c => new InventoryCategoryDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                CategoryCode = c.CategoryCode,
+                RiskWeight = c.RiskWeight,
+                Description = c.Description,
+
+                // ✅ TOTAL ITEMS (ROOT + SUB)
+                TotalItems =
+                    _context.InventoryItems.Count(i => i.InventoryCategoryId == c.Id) +
+                    _context.InventoryItems.Count(i =>
+                        i.InventoryCategory.ParentCategoryId == c.Id
+                    ),
+
+                // ✅ SUBCATEGORIES
+                SubCategories = _context.InventoryCategories
+                    .Where(sc => sc.ParentCategoryId == c.Id)
+                    .Select(sc => new InventoryCategoryDto
+                    {
+                        Id = sc.Id,
+                        Name = sc.Name,
+                        CategoryCode = sc.CategoryCode,
+                        Description = sc.Description,
+
+                        TotalItems = _context.InventoryItems
+                            .Count(i => i.InventoryCategoryId == sc.Id),
+
+                        SubCategories = new List<InventoryCategoryDto>()
+                    }).ToList()
+            })
+            .ToListAsync();
+
+        // =========================
+        // ✅ GLOBAL STATS
+        // =========================
+
+        var totalCategories = await _context.InventoryCategories
+            .CountAsync(c => c.ParentCategoryId == null);
+
+        var totalSubcategories = await _context.InventoryCategories
+            .CountAsync(c => c.ParentCategoryId != null);
+
+        var totalItems = await _context.InventoryItems
+            .CountAsync();
+
+        // =========================
+
+        return new CategoryPagedResponse
+        {
+            Categories = categories,
+
+            CategoryStats = new CategoryStats
+            {
+                TotalCategories = totalCategories,
+                TotalSubCategories = totalSubcategories,
+                TotalItems = totalItems
+            },
+
+            TotalCount = totalCount,
+            PageNumber = query.PageNumber,
+            PageSize = query.PageSize
+        };
     }
-
-    // ✅ TOTAL COUNT (after filter)
-    var totalCount = await baseQuery.CountAsync();
-
-    // ✅ PAGINATED DATA (NO INCLUDE → PURE PROJECTION)
-    var categories = await baseQuery
-        .OrderByDescending(c => c.CreatedAt)
-        .Skip((query.PageNumber - 1) * query.PageSize)
-        .Take(query.PageSize)
-        .Select(c => new InventoryCategoryDto
-        {
-            Id = c.Id,
-            Name = c.Name,
-            CategoryCode = c.CategoryCode,
-            RiskWeight = c.RiskWeight,
-            Description = c.Description,
-
-            // ✅ TOTAL ITEMS (ROOT + SUB)
-            TotalItems =
-                _context.InventoryItems.Count(i => i.InventoryCategoryId == c.Id) +
-                _context.InventoryItems.Count(i =>
-                    i.InventoryCategory.ParentCategoryId == c.Id
-                ),
-
-            // ✅ SUBCATEGORIES
-            SubCategories = _context.InventoryCategories
-                .Where(sc => sc.ParentCategoryId == c.Id)
-                .Select(sc => new InventoryCategoryDto
-                {
-                    Id = sc.Id,
-                    Name = sc.Name,
-                    CategoryCode = sc.CategoryCode,
-                    Description = sc.Description,
-
-                    TotalItems = _context.InventoryItems
-                        .Count(i => i.InventoryCategoryId == sc.Id),
-
-                    SubCategories = new List<InventoryCategoryDto>()
-                }).ToList()
-        })
-        .ToListAsync();
-
-    // =========================
-    // ✅ GLOBAL STATS
-    // =========================
-
-    var totalCategories = await _context.InventoryCategories
-        .CountAsync(c => c.ParentCategoryId == null);
-
-    var totalSubcategories = await _context.InventoryCategories
-        .CountAsync(c => c.ParentCategoryId != null);
-
-    var totalItems = await _context.InventoryItems
-        .CountAsync();
-
-    // =========================
-
-    return new CategoryPagedResponse
-    {
-        Categories = categories,
-
-        CategoryStats = new CategoryStats
-        {
-            TotalCategories = totalCategories,
-            TotalSubCategories = totalSubcategories,
-            TotalItems = totalItems
-        },
-
-        TotalCount = totalCount,
-        PageNumber = query.PageNumber,
-        PageSize = query.PageSize
-    };
-}
 
 
     public async Task CreateCategoryAsync(CreateCategoryDto dto, Guid userId)
@@ -410,7 +412,7 @@ public class InventoryService : IInventoryService
             CategoryCode = categoryCode,
             Description = dto.Description,
             ParentCategoryId = dto.ParentCategoryId,
-            CreatedBy =  userId
+            CreatedBy = userId
         };
 
         _context.InventoryCategories.Add(category);
@@ -472,17 +474,37 @@ public class InventoryService : IInventoryService
         _context.InventoryCategories.Remove(category);
         await _context.SaveChangesAsync();
     }
-    
+
+
+    public async Task<IEnumerable<CategoryDto>> GetLeafCategoriesAsync()
+    {
+        return await _context.InventoryCategories
+            .Where(c => !c.SubCategories.Any()) // leaf nodes
+            .Select(c => new CategoryDto
+            {
+                Id = c.Id,
+                Name = c.Name
+            })
+            .ToListAsync();
+    }
 
     #endregion
 
 
     #region Inventory Items
-    
+
     public async Task<InventoryItemDto> CreateItemAsync(CreateInventoryItemDto dto, Guid userId)
     {
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new Exception("Item name is required");
+
+        var exists = await _context.InventoryItems
+            .AnyAsync(i =>
+                i.InventoryCategoryId == dto.CategoryId &&
+                i.Name.ToLower() == dto.Name.ToLower());
+
+        if (exists)
+            throw new Exception("Item already exists in this category");
 
         var category = await _context.InventoryCategories
             .FirstOrDefaultAsync(c => c.Id == dto.CategoryId);
@@ -504,7 +526,7 @@ public class InventoryService : IInventoryService
             CreatedById = userId,
             CreatedAt = DateTime.UtcNow,
             Status = "Available",
-            Condition =  "Good",
+            Condition = "Good",
             Location = "Inventory"
         };
 
@@ -519,7 +541,68 @@ public class InventoryService : IInventoryService
             //item.Barcode
         };
     }
-    
+
+    public async Task<InventoryItemDto> UpdateItemAsync(Guid itemId, UpdateInventoryItemDto dto, Guid userId)
+    {
+        var item = await _context.InventoryItems
+            .FirstOrDefaultAsync(i => i.Id == itemId);
+
+        if (item == null)
+            throw new Exception("Item not found");
+
+        // Validate Name
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new Exception("Item name is required");
+
+        // Validate Category
+        var category = await _context.InventoryCategories
+            .FirstOrDefaultAsync(c => c.Id == dto.InventoryCategoryId);
+
+        if (category == null)
+            throw new Exception("Invalid category");
+
+        // Check duplicate (exclude current item)
+        var exists = await _context.InventoryItems
+            .AnyAsync(i =>
+                i.Id != itemId &&
+                i.InventoryCategoryId == dto.InventoryCategoryId &&
+                i.Name.ToLower() == dto.Name.ToLower());
+
+        if (exists)
+            throw new Exception("Item already exists in this category");
+
+        // 🔹 Regenerate SKU ONLY if Name or Category changed
+        if (item.Name != dto.Name || item.InventoryCategoryId != dto.InventoryCategoryId)
+        {
+            var newSku = await GenerateSkuAsync(dto.Name, dto.InventoryCategoryId);
+            item.SKU = newSku;
+            item.Barcode = newSku; // keep consistent
+        }
+
+        // 🔹 Update fields
+        item.Name = dto.Name;
+        item.InventoryCategoryId = dto.InventoryCategoryId;
+        item.Description = dto.Description;
+        item.Status = dto.Status ?? item.Status;
+        item.Condition = dto.Condition ?? item.Condition;
+        item.Location = dto.Location ?? item.Location;
+        item.SerialNumber = dto.SerialNumber ?? item.SerialNumber;
+
+        // 🔹 Audit fields
+        // item.UpdatedById = userId;
+        // item.UpdatedAt = DateTime.UtcNow;
+
+        _context.InventoryItems.Update(item);
+        await _context.SaveChangesAsync();
+
+        return new InventoryItemDto
+        {
+            Id = item.Id,
+            Name = item.Name,
+            SKU = item.SKU,
+        };
+    }
+
     public async Task<InventoryItemDetailDto> GetInventoryItemById(Guid id)
     {
         var item = await _context.InventoryItems
@@ -538,7 +621,7 @@ public class InventoryService : IInventoryService
             Barcode = item.Barcode,
             SerialNumber = item.SerialNumber,
             Category = item.InventoryCategory.Name,
-
+            CategoryId = item.InventoryCategory.Id,
             Status = item.Status,
             Condition = item.Condition,
             Location = item.Location,
@@ -553,8 +636,8 @@ public class InventoryService : IInventoryService
             CreatedAt = item.CreatedAt
         };
     }
-    
-    
+
+
     public async Task<List<InventoryCategoryDto>> GetLeafCategories()
     {
         return await _context.InventoryCategories
@@ -567,8 +650,8 @@ public class InventoryService : IInventoryService
             })
             .ToListAsync();
     }
-    
-    
+
+
     public async Task<string> GenerateSkuAsync(string name, Guid categoryId)
     {
         var category = await _context.InventoryCategories
@@ -604,6 +687,19 @@ public class InventoryService : IInventoryService
         }
 
         return $"{categoryCode}-{nameCode}-{nextNumber:D3}";
+    }
+
+
+    public async Task<IEnumerable<InventoryItemDropDownDto>> GetItemsByCategoryAsync(Guid categoryId)
+    {
+        return await _context.InventoryItems
+            .Where(i => i.InventoryCategoryId == categoryId)
+            .Select(i => new InventoryItemDropDownDto
+            {
+                Id = i.Id,
+                Name = i.Name
+            })
+            .ToListAsync();
     }
 
     #endregion
@@ -697,9 +793,6 @@ public class InventoryService : IInventoryService
             counter++;
         }
     }
-    
-    
-    
 
     #endregion
 }

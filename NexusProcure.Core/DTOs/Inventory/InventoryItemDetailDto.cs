@@ -9,6 +9,7 @@ public class InventoryItemDetailDto
     public string SerialNumber { get; set; }
 
     public string Category { get; set; }
+    public Guid CategoryId { get; set; }
 
     public string Status { get; set; }
     public string Condition { get; set; }

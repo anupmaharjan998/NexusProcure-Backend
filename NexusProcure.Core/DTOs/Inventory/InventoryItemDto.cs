@@ -8,12 +8,18 @@ public class InventoryItemDto
     public string Name { get; set; }
     public string Category { get; set; }
 
-    public string SerialNumber { get; set; }
+    public string? SerialNumber { get; set; }
     public string Barcode { get; set; }
 
     public string Status { get; set; }
 
-    public string AssignedTo { get; set; }
+    public string? AssignedTo { get; set; }
 
     public string Location { get; set; }
+}
+
+public class InventoryItemDropDownDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; }
 }

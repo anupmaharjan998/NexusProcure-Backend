@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260402102533_UpdateRequisitionCategory")]
+    partial class UpdateRequisitionCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -319,6 +322,31 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasIndex("PerformedById");
 
                     b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RiskWeight")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Category");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Department", b =>
@@ -1650,6 +1678,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<string>("BankName")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("CompanyName")
                         .HasColumnType("text");
 
@@ -1689,6 +1720,8 @@ namespace NexusProcure.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("InventoryCategoryId");
 
@@ -1782,7 +1815,7 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.ApprovalPolicy", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
+                    b.HasOne("NexusProcure.Core.Entities.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2106,6 +2139,10 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
                 {
+                    b.HasOne("NexusProcure.Core.Entities.Category", null)
+                        .WithMany("Vendors")
+                        .HasForeignKey("CategoryId");
+
                     b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", null)
                         .WithMany("Vendors")
                         .HasForeignKey("InventoryCategoryId");
@@ -2139,6 +2176,11 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Vendor");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Category", b =>
+                {
+                    b.Navigation("Vendors");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Department", b =>

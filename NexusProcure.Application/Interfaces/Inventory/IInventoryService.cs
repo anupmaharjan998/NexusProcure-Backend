@@ -1,4 +1,5 @@
-﻿using NexusProcure.Core.DTOs.Inventory;
+﻿using NexusProcure.Core.DTOs.Category;
+using NexusProcure.Core.DTOs.Inventory;
 
 namespace NexusProcure.Application.Interfaces.Inventory;
 
@@ -15,13 +16,15 @@ public interface IInventoryService
     Task CreateCategoryAsync(CreateCategoryDto dto, Guid userId);
     Task UpdateCategoryAsync(Guid id, UpdateInventoryCategoryDto dto, Guid userId);
     Task DeleteCategoryAsync(Guid id);
-    
+    Task<IEnumerable<CategoryDto>> GetLeafCategoriesAsync();
+    Task<IEnumerable<InventoryItemDropDownDto>> GetItemsByCategoryAsync(Guid categoryId);
 
     #endregion
 
     #region Inventory Item
 
     Task<InventoryItemDto> CreateItemAsync(CreateInventoryItemDto dto, Guid userId);
+    Task<InventoryItemDto> UpdateItemAsync(Guid itemId, UpdateInventoryItemDto dto, Guid userId);
     Task<InventoryItemDetailDto> GetInventoryItemById(Guid id);
     Task<List<InventoryCategoryDto>> GetLeafCategories();
     Task<string> GenerateSkuAsync(string name, Guid categoryId);
