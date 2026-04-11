@@ -708,7 +708,7 @@ public class RfqService : IRfqService
         var policies = await _context.ApprovalPolicies
             .Where(p =>
                 p.CategoryId == requisition.CategoryId &&
-                p.IsActive)
+                p.IsActive && p.RiskLevel == requisition.RiskLevel)
             .OrderBy(p => p.SequenceOrder)
             .ToListAsync();
 

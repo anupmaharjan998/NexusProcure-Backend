@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260404081457_AddedItemAssignHistory")]
+    partial class AddedItemAssignHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -911,9 +914,9 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("60000000-0000-0000-0000-000000000006"),
-                            Description = "Unassigned asset from employee",
+                            Description = "Return assigned asset",
                             Group = "Inventory",
-                            Key = "UNASSIGN_ASSET"
+                            Key = "RETURN_ASSET"
                         },
                         new
                         {
@@ -959,80 +962,10 @@ namespace NexusProcure.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("90000000-0000-0000-0000-000000000002"),
-                            Description = "Add new category",
-                            Group = "Category",
-                            Key = "ADD_CATEGORIES"
-                        },
-                        new
-                        {
-                            Id = new Guid("90000000-0000-0000-0000-000000000003"),
-                            Description = "Update category",
-                            Group = "Category",
-                            Key = "UPDATE_CATEGORIES"
-                        },
-                        new
-                        {
-                            Id = new Guid("90000000-0000-0000-0000-000000000004"),
-                            Description = "Delete category",
-                            Group = "Category",
-                            Key = "DELETE_CATEGORIES"
-                        },
-                        new
-                        {
                             Id = new Guid("11000000-0000-0000-0000-000000000001"),
                             Description = "View permissions",
                             Group = "Permissions",
                             Key = "VIEW_PERMISSIONS"
-                        },
-                        new
-                        {
-                            Id = new Guid("11000000-0000-0000-0000-000000000002"),
-                            Description = "Update permissions",
-                            Group = "Permissions",
-                            Key = "UPDATE_PERMISSIONS"
-                        },
-                        new
-                        {
-                            Id = new Guid("12000000-0000-0000-0000-000000000001"),
-                            Description = "Add permissions",
-                            Group = "Policies",
-                            Key = "ADD_POLICIES"
-                        },
-                        new
-                        {
-                            Id = new Guid("12000000-0000-0000-0000-000000000002"),
-                            Description = "Delete permissions",
-                            Group = "Policies",
-                            Key = "DELETE_POLICIES"
-                        },
-                        new
-                        {
-                            Id = new Guid("12000000-0000-0000-0000-000000000003"),
-                            Description = "Update permissions",
-                            Group = "Policies",
-                            Key = "UPDATE_POLICIES"
-                        },
-                        new
-                        {
-                            Id = new Guid("12000000-0000-0000-0000-000000000004"),
-                            Description = "Add total amount risk score",
-                            Group = "Policies",
-                            Key = "ADD_TOTAL_AMOUNT_RISK_SCORE"
-                        },
-                        new
-                        {
-                            Id = new Guid("12000000-0000-0000-0000-000000000005"),
-                            Description = "Update total amount risk score",
-                            Group = "Policies",
-                            Key = "UPDATE_TOTAL_AMOUNT_RISK_SCORE"
-                        },
-                        new
-                        {
-                            Id = new Guid("12000000-0000-0000-0000-000000000006"),
-                            Description = "Delete total amount risk score",
-                            Group = "Policies",
-                            Key = "DELETE_TOTAL_AMOUNT_RISK_SCORE"
                         });
                 });
 
@@ -1670,57 +1603,7 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("90000000-0000-0000-0000-000000000002")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("90000000-0000-0000-0000-000000000003")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("90000000-0000-0000-0000-000000000004")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("11000000-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("11000000-0000-0000-0000-000000000002")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("12000000-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("12000000-0000-0000-0000-000000000002")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("12000000-0000-0000-0000-000000000003")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("12000000-0000-0000-0000-000000000004")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("12000000-0000-0000-0000-000000000005")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("12000000-0000-0000-0000-000000000006")
                         });
                 });
 

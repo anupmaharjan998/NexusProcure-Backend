@@ -25,4 +25,5 @@ public class InventoryItem : BaseEntity
     public Guid? CreatedById { get; set; }
     public User CreatedBy { get; set; }
 
+    public ICollection<InventoryAssignmentHistory> AssignmentHistories { get; set; }
 }

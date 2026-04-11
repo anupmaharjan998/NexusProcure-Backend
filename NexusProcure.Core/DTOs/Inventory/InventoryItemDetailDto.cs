@@ -20,4 +20,6 @@ public class InventoryItemDetailDto
 
     public string Description { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    public List<InventoryAssignmentHistoryDto> AssignmentHistory { get; set; }
 }

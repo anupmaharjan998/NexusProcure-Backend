@@ -288,7 +288,8 @@ namespace NexusProcure.Application.Services.Procurement
                         {
                             foreach (var next in nextApprovals)
                             {
-                                next.IsActive = true;
+                                if (next.SequenceOrder == nextStep)
+                                    next.IsActive = true;
                             }
 
                             sendNextStepEmail = true;

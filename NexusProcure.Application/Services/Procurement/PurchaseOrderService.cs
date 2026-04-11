@@ -31,9 +31,9 @@ public class PurchaseOrderService : IPurchaseOrderService
 
                 TotalValue = purchaseOrders.Sum(x => x.TotalAmount),
 
-                InTransit = purchaseOrders.Count(x => x.DeliveryStatus == DeliveryStatus.InTransit),
+                InTransit = purchaseOrders.Count(x => x.DeliveryStatus == DeliveryStatus.Pending),
 
-                Delivered = purchaseOrders.Count(x => x.DeliveryStatus == DeliveryStatus.Delivered),
+                Delivered = purchaseOrders.Count(x => x.DeliveryStatus == DeliveryStatus.Received),
 
                 Orders = purchaseOrders.Select(po => new PurchaseOrderDto
                 {

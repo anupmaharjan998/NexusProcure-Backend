@@ -608,6 +608,9 @@ public class InventoryService : IInventoryService
         var item = await _context.InventoryItems
             .Include(x => x.InventoryCategory)
             .Include(x => x.AssignedTo)
+            .Include(x => x.AssignmentHistories)
+                .ThenInclude(x => x.AssignedTo)
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (item == null)
@@ -633,7 +636,15 @@ public class InventoryService : IInventoryService
             AssignedDate = item.AssignedDate,
 
             Description = item.Description,
-            CreatedAt = item.CreatedAt
+            CreatedAt = item.CreatedAt,
+            AssignmentHistory = item.AssignmentHistories
+                .OrderByDescending(h => h.AssignedDate)
+                .Select(h => new InventoryAssignmentHistoryDto
+                {
+                    UserName = h.AssignedTo.FullName,
+                    AssignedDate = h.AssignedDate,
+                    ReturnedDate = h.UnassignedDate
+                }).ToList()
         };
     }
 
@@ -701,47 +712,121 @@ public class InventoryService : IInventoryService
             })
             .ToListAsync();
     }
+    
 
-    #endregion
-
-
-    public async Task AssignManualAsync(AssignItemDto dto)
+    public async Task<InventoryItemDetailDto?> AssignItemAsync(Guid itemId, AssignInventoryItemDto dto, Guid assignedBy)
     {
-        await using var tx = await _context.Database.BeginTransactionAsync();
+        var item = await _context.InventoryItems
+            .Include(i => i.AssignedTo)
+            .Include(i => i.InventoryCategory)
+            .Include(i => i.AssignmentHistories)
+                .ThenInclude(h => h.AssignedTo)
+            .FirstOrDefaultAsync(i => i.Id == itemId);
 
-        var stock = await _context.Stocks
-            .FirstOrDefaultAsync(x => x.InventoryItemId == dto.InventoryItemId);
+        if (item == null) return null;
 
-        if (stock.AvailableQuantity < dto.Quantity)
-            throw new Exception("Insufficient stock");
+        if (item.Status == "Assigned")
+            throw new Exception("Item is already assigned.");
 
-        // Deduct
-        stock.AvailableQuantity -= dto.Quantity;
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.UserId);
+        if (user == null)
+            throw new Exception("Assigned user not found.");
 
-        // Assign
-        await _context.InventoryAssignments.AddAsync(new InventoryAssignment
+        item.AssignedToId = dto.UserId;
+        item.AssignedDate = DateTime.UtcNow;
+        item.Status = "Assigned";
+
+        var history = new InventoryAssignmentHistory
         {
             Id = Guid.NewGuid(),
-            InventoryItemId = dto.InventoryItemId,
-            UserId = dto.UserId,
-            Quantity = dto.Quantity,
-            AssignedDate = DateTime.UtcNow
-        });
+            InventoryItemId = item.Id,
+            AssignedToId = dto.UserId,
+            AssignedById = assignedBy,
+            AssignedDate = DateTime.UtcNow,
+            Notes = dto.Notes
+        };
 
-        // Ledger
-        _context.StockTransactions.Add(new StockTransaction
+        _context.InventoryAssignmentHistories.Add(history);
+        await _context.SaveChangesAsync();
+
+        return await GetInventoryItemByIdAsync(itemId);
+    }
+
+    public async Task<InventoryItemDetailDto?> UnassignItemAsync(Guid itemId, Guid unassignedBy)
+    {
+        var item = await _context.InventoryItems
+            .Include(i => i.AssignedTo)
+            .Include(i => i.InventoryCategory)
+            .Include(i => i.AssignmentHistories)
+                .ThenInclude(h => h.AssignedTo)
+            .FirstOrDefaultAsync(i => i.Id == itemId);
+
+        if (item == null) return null;
+
+        if (item.Status != "Assigned" || item.AssignedToId == null)
+            throw new Exception("Item is not currently assigned.");
+
+        var activeHistory = await _context.InventoryAssignmentHistories
+            .Where(h => h.InventoryItemId == item.Id && h.UnassignedDate == null)
+            .OrderByDescending(h => h.AssignedDate)
+            .FirstOrDefaultAsync();
+
+        if (activeHistory != null)
         {
-            Id = Guid.NewGuid(),
-            InventoryItemId = dto.InventoryItemId,
-            Type = StockTransactionType.Out,
-            Quantity = dto.Quantity,
-            Date = DateTime.UtcNow,
-            Reference = dto.UserId.ToString()
-        });
+            activeHistory.UnassignedById = unassignedBy;
+            activeHistory.UnassignedDate = DateTime.UtcNow;
+        }
+
+        item.AssignedToId = null;
+        item.AssignedDate = DateTime.MinValue;
+        item.Status = "Available";
 
         await _context.SaveChangesAsync();
-        await tx.CommitAsync();
+
+        return await GetInventoryItemByIdAsync(itemId);
     }
+
+    public async Task<InventoryItemDetailDto?> GetInventoryItemByIdAsync(Guid itemId)
+    {
+        var item = await _context.InventoryItems
+            .Include(i => i.AssignedTo)
+            .Include(i => i.InventoryCategory)
+            .Include(i => i.AssignmentHistories)
+                .ThenInclude(h => h.AssignedTo)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == itemId);
+
+        if (item == null) return null;
+
+        return new InventoryItemDetailDto
+        {
+            Id = item.Id,
+            Name = item.Name,
+            SKU = item.SKU,
+            Barcode = item.Barcode,
+            SerialNumber = item.SerialNumber,
+            Category = item.InventoryCategory.Name,
+            Status = item.Status,
+            Condition = item.Condition,
+            Location = item.Location,
+            AssignedTo = item.AssignedTo != null ? item.AssignedTo.FullName : null,
+            AssignedDate = item.AssignedDate,
+            Description = item.Description,
+            CreatedAt = item.CreatedAt,
+            AssignmentHistory = item.AssignmentHistories
+                .OrderByDescending(h => h.AssignedDate)
+                .Select(h => new InventoryAssignmentHistoryDto
+                {
+                    UserName = h.AssignedTo.FullName,
+                    AssignedDate = h.AssignedDate,
+                    ReturnedDate = h.UnassignedDate
+                })
+                .ToList()
+        };
+    }
+
+    #endregion
+    
 
 
     #region Helper

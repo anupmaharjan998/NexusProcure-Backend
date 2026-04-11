@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Core.DTOs.Procurement;
@@ -21,6 +22,7 @@ public class RequisitionsController : BaseApiController
     public async Task<IActionResult> GetById(Guid id) => Ok(await _requisitionService.GetByIdAsync(id));
 
     [HttpPost]
+    [Authorize(Policy = "CREATE_REQUISITION")]
     public async Task<IActionResult> Create(RequisitionCreateDto dto)
     {
         var requestedById = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));

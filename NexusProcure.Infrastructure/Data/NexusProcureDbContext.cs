@@ -56,7 +56,9 @@ public class NexusProcureDbContext : DbContext
     public DbSet<Stock> Stocks { get; set; }
     public DbSet<StockTransaction> StockTransactions { get; set; }
     public DbSet<GoodsReceipt> GoodsReceipts { get; set; }
+    public DbSet<GoodsReceiptItem> GoodsReceiptItems { get; set; }
     public DbSet<InventoryAssignment> InventoryAssignments { get; set; }
+    public DbSet<InventoryAssignmentHistory> InventoryAssignmentHistories { get; set; }
     
     
 
@@ -236,6 +238,72 @@ public class NexusProcureDbContext : DbContext
         modelBuilder.Entity<InventoryItem>()
             .HasIndex(x => x.SKU)
             .IsUnique();
+        
+        modelBuilder.Entity<GoodsReceipt>()
+            .HasOne(gr => gr.PurchaseOrder)
+            .WithMany()
+            .HasForeignKey(gr => gr.PurchaseOrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GoodsReceipt>()
+            .HasOne(gr => gr.ReceivedBy)
+            .WithMany()
+            .HasForeignKey(gr => gr.ReceivedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GoodsReceiptItem>()
+            .HasOne(gri => gri.GoodsReceipt)
+            .WithMany(gr => gr.Items)
+            .HasForeignKey(gri => gri.GoodsReceiptId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GoodsReceiptItem>()
+            .HasOne(gri => gri.PurchaseOrderItem)
+            .WithMany()
+            .HasForeignKey(gri => gri.PurchaseOrderItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GoodsReceiptItem>()
+            .HasOne(gri => gri.InventoryItem)
+            .WithMany()
+            .HasForeignKey(gri => gri.InventoryItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<GoodsReceipt>()
+            .Property(gr => gr.InventoryProcessingStatus)
+            .HasConversion<string>()
+            .HasMaxLength(20);
+        
+        
+        modelBuilder.Entity<InventoryAssignmentHistory>()
+            .HasOne(h => h.InventoryItem)
+            .WithMany(i => i.AssignmentHistories)
+            .HasForeignKey(h => h.InventoryItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InventoryAssignmentHistory>()
+            .HasOne(h => h.AssignedTo)
+            .WithMany()
+            .HasForeignKey(h => h.AssignedToId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<InventoryAssignmentHistory>()
+            .HasOne(h => h.AssignedBy)
+            .WithMany()
+            .HasForeignKey(h => h.AssignedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<InventoryAssignmentHistory>()
+            .HasOne(h => h.UnassignedBy)
+            .WithMany()
+            .HasForeignKey(h => h.UnassignedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<InventoryItem>()
+            .HasOne(i => i.AssignedTo)
+            .WithMany()
+            .HasForeignKey(i => i.AssignedToId)
+            .OnDelete(DeleteBehavior.Restrict);
         
         // SEEDS
         SeedRoles(modelBuilder);

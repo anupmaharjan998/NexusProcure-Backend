@@ -29,7 +29,8 @@ public interface IInventoryService
     Task<List<InventoryCategoryDto>> GetLeafCategories();
     Task<string> GenerateSkuAsync(string name, Guid categoryId);
     
-    
+    Task<InventoryItemDetailDto?> AssignItemAsync(Guid itemId, AssignInventoryItemDto dto, Guid assignedBy);
+    Task<InventoryItemDetailDto?> UnassignItemAsync(Guid itemId, Guid unassignedBy);
 
     #endregion
 }

@@ -15,9 +15,11 @@ public class RolesController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll() => Ok(await _roleService.GetAllAsync());
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
         var role = await _roleService.GetByIdAsync(id);

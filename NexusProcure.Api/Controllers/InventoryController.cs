@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces.Inventory;
 using NexusProcure.Core.DTOs.Inventory;
@@ -75,8 +76,7 @@ public class InventoryController : BaseApiController
         return Ok(await _inventoryService.GetInventoryAsync(query));
     }
 
-    
-    
+
     #region Category
 
     [HttpGet("get-categories")]
@@ -87,6 +87,7 @@ public class InventoryController : BaseApiController
     }
 
     [HttpPost("categories")]
+    [Authorize(Policy = "ADD_CATEGORIES")]
     public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDto dto)
     {
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
@@ -95,6 +96,7 @@ public class InventoryController : BaseApiController
     }
 
     [HttpPut("categories/{id}")]
+    [Authorize(Policy = "UPDATE_CATEGORIES")]
     public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateInventoryCategoryDto dto)
     {
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
@@ -103,12 +105,13 @@ public class InventoryController : BaseApiController
     }
 
     [HttpDelete("categories/{id}")]
+    [Authorize(Policy = "DELETE_CATEGORIES")]
     public async Task<IActionResult> DeleteCategory(Guid id)
     {
         await _inventoryService.DeleteCategoryAsync(id);
         return Ok();
     }
-    
+
     /* ---------------- Get Leaf Categories ---------------- */
     [HttpGet("get-leaf-categories-dropdown")]
     public async Task<IActionResult> GetLeafCategoriesForDropDown()
@@ -124,29 +127,30 @@ public class InventoryController : BaseApiController
         var result = await _inventoryService.GetItemsByCategoryAsync(categoryId);
         return Ok(result);
     }
-    
-    
 
     #endregion
 
 
     #region Inventory Item
-    
+
     [HttpPost("create-item")]
+    [Authorize(Policy = "ADD_INVENTORY_ITEM")]
     public async Task<IActionResult> CreateItem([FromBody] CreateInventoryItemDto dto)
     {
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
         var result = await _inventoryService.CreateItemAsync(dto, userId);
         return Ok(result);
     }
+
     [HttpPut("update-item/{id}")]
+    [Authorize(Policy = "UPDATE_INVENTORY_ITEM")]
     public async Task<IActionResult> UpdateItem(Guid id, [FromBody] UpdateInventoryItemDto dto)
     {
         var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
         var result = await _inventoryService.UpdateItemAsync(id, dto, userId);
         return Ok(result);
     }
-    
+
     [HttpGet("item/{id}")]
     public async Task<IActionResult> GetInventoryItemById(Guid id)
     {
@@ -154,21 +158,49 @@ public class InventoryController : BaseApiController
         return Ok(result);
     }
 
-    
+
     [HttpGet("get-leaf-categories")]
     public async Task<IActionResult> GetLeafCategories()
     {
         var result = await _inventoryService.GetLeafCategories();
         return Ok(result);
     }
-    
+
     [HttpGet("preview-sku")]
     public async Task<IActionResult> PreviewSku(string name, Guid categoryId)
     {
         var sku = await _inventoryService.GenerateSkuAsync(name, categoryId);
         return Ok(sku);
     }
-    
-    
+
+
+    [HttpPost("{id:guid}/assign")]
+    [Authorize(Policy = "ASSIGN_ASSET")]
+    public async Task<IActionResult> AssignItem(Guid id, [FromBody] AssignInventoryItemDto dto)
+    {
+        var userIdClaim = User.FindFirstValue("userId");
+        if (!Guid.TryParse(userIdClaim, out var assignedBy))
+            return Unauthorized("User id missing.");
+
+        var result = await _inventoryService.AssignItemAsync(id, dto, assignedBy);
+        if (result == null) return NotFound();
+
+        return Ok(result);
+    }
+
+    [HttpPost("{id:guid}/unassign")]
+    [Authorize(Policy = "UNASSIGN_ASSET")]
+    public async Task<IActionResult> UnassignItem(Guid id)
+    {
+        var userIdClaim = User.FindFirstValue("userId");
+        if (!Guid.TryParse(userIdClaim, out var unassignedBy))
+            return Unauthorized("User id missing.");
+
+        var result = await _inventoryService.UnassignItemAsync(id, unassignedBy);
+        if (result == null) return NotFound();
+
+        return Ok(result);
+    }
+
     #endregion
 }

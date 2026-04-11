@@ -19,6 +19,7 @@ public class DepartmentsController : BaseApiController
     public async Task<IActionResult> GetAll() => Ok(await _departmentService.GetAllAsync());
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
         var department = await _departmentService.GetByIdAsync(id);

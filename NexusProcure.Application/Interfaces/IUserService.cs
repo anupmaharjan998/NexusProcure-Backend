@@ -12,4 +12,5 @@ public interface IUserService
     Task<bool> DeleteAsync(Guid id);
     Task<ProfileImageResponse> UploadProfilePictureAsync(string email, IFormFile file);
     Task<UserDto?> UserProfileUpdateAsync(Guid id, UserUpdateDto dto);
+    Task<List<UserDto>> SearchUsersAsync(string search);
 }

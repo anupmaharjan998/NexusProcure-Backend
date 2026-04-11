@@ -181,6 +181,10 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
+//PO Items Receive
+builder.Services.AddScoped<IPurchaseOrderReceiptService, PurchaseOrderReceiptService>();
+builder.Services.AddScoped<IInventoryCodeService, InventoryCodeService>();
+
 builder.Services.AddHttpContextAccessor();
 
 
@@ -192,6 +196,7 @@ builder.Services.AddScoped<IApprovalEscalationJob, ApprovalEscalationJob>();
 builder.Services.AddScoped<IRfqJob, RfqJob>();
 builder.Services.AddScoped<IRfqApprovalJob, RfqApprovalJob>();
 builder.Services.AddScoped<IPurchaseRequestJob, PurchaseRequestJob>();
+builder.Services.AddScoped<IInventoryReceiptJob, InventoryReceiptJob>();
 
 
 builder.Services.AddScoped<HangfireJobLoggingFilter>();
