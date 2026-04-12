@@ -1,4 +1,6 @@
-﻿namespace NexusProcure.Core.Entities;
+﻿using NexusProcure.Core.Entities.Inventory;
+
+namespace NexusProcure.Core.Entities;
 
 public class PurchaseOrderItem
 {
@@ -11,4 +13,7 @@ public class PurchaseOrderItem
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal LineTotal { get; set; }
+    
+    public Guid? InventoryCategoryId { get; set; }
+    public InventoryCategory? InventoryCategory { get; set; }
 }

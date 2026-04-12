@@ -15,12 +15,14 @@ using NexusProcure.Application;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Helper;
+using NexusProcure.Application.Interfaces.Inventory;
 using NexusProcure.Application.Interfaces.Procurement;
 using NexusProcure.Application.Interfaces.RequestForQuotation;
 using NexusProcure.Application.Models;
 using NexusProcure.Application.Services;
 using NexusProcure.Application.Services.BackgroundJobs;
 using NexusProcure.Application.Services.Helper;
+using NexusProcure.Application.Services.Inventory;
 using NexusProcure.Application.Services.Procurement;
 using NexusProcure.Application.Services.RequestForQuotation;
 using NexusProcure.Core.DTOs;
@@ -165,6 +167,11 @@ builder.Services.AddScoped<IRfqNumberGenerator, RfqNumberGenerator>();
 builder.Services.AddScoped<IRfqService, RfqService>();
 builder.Services.AddScoped<IRfqExcelService, RfqExcelService>();
 
+//Inventory
+builder.Services.AddScoped<IInventoryCategoryService, InventoryCategoryService>();
+builder.Services.AddScoped<IInventoryItemService, InventoryItemService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
@@ -173,6 +180,10 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+
+//PO Items Receive
+builder.Services.AddScoped<IPurchaseOrderReceiptService, PurchaseOrderReceiptService>();
+builder.Services.AddScoped<IInventoryCodeService, InventoryCodeService>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -185,6 +196,7 @@ builder.Services.AddScoped<IApprovalEscalationJob, ApprovalEscalationJob>();
 builder.Services.AddScoped<IRfqJob, RfqJob>();
 builder.Services.AddScoped<IRfqApprovalJob, RfqApprovalJob>();
 builder.Services.AddScoped<IPurchaseRequestJob, PurchaseRequestJob>();
+builder.Services.AddScoped<IInventoryReceiptJob, InventoryReceiptJob>();
 
 
 builder.Services.AddScoped<HangfireJobLoggingFilter>();

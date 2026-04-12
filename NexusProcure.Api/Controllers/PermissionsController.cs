@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 
 namespace NexusProcure.Api.Controllers;
@@ -13,9 +14,11 @@ public class PermissionsController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll() => Ok(await _permissionService.GetAllAsync());
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
         var permission = await _permissionService.GetByIdAsync(id);
@@ -24,6 +27,7 @@ public class PermissionsController : BaseApiController
 
     // 🎯 Assign permissions to a role
     [HttpPost("assign/{roleId}")]
+    [Authorize(Policy = "UPDATE_PERMISSIONS")]
     public async Task<IActionResult> AssignToRole(Guid roleId, [FromBody] List<Guid> permissionIds)
     {
         var success = await _permissionService.AssignPermissionsToRole(roleId, permissionIds);

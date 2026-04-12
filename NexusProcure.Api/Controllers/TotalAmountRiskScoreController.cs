@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs.Approval;
 
@@ -14,6 +15,7 @@ public class TotalAmountRiskScoreController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll()
         => Ok(await _service.GetAllAsync());
 
@@ -22,6 +24,7 @@ public class TotalAmountRiskScoreController : BaseApiController
         => Ok(await _service.GetByIdAsync(id));
 
     [HttpPost]
+    [Authorize(Policy = "ADD_TOTAL_AMOUNT_RISK_SCORE")]
     public async Task<IActionResult> Create(
         [FromBody] TotalAmountRiskScoreDto dto)
     {
@@ -30,6 +33,7 @@ public class TotalAmountRiskScoreController : BaseApiController
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "UPDATE_TOTAL_AMOUNT_RISK_SCORE")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] TotalAmountRiskScoreDto dto)
@@ -39,6 +43,7 @@ public class TotalAmountRiskScoreController : BaseApiController
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "DELETE_TOTAL_AMOUNT_RISK_SCORE")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _service.DeleteAsync(id);

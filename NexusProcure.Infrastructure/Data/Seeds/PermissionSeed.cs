@@ -49,7 +49,7 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000003"), Group = "Inventory", Key = "UPDATE_INVENTORY_ITEM", Description = "Update inventory items" },
                 new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000004"), Group = "Inventory", Key = "DELETE_INVENTORY_ITEM", Description = "Delete inventory items" },
                 new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000005"), Group = "Inventory", Key = "ASSIGN_ASSET", Description = "Assign asset to employee" },
-                new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000006"), Group = "Inventory", Key = "RETURN_ASSET", Description = "Return assigned asset" },
+                new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000006"), Group = "Inventory", Key = "UNASSIGN_ASSET", Description = "Unassigned asset from employee" },
 
                 // ------------------ Reporting ------------------
                 new Permission { Id = Guid.Parse("70000000-0000-0000-0000-000000000001"), Group = "Reporting", Key = "VIEW_REPORTS", Description = "View reports" },
@@ -62,9 +62,21 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 
                 // ------------------ System & Admin ------------------
                 new Permission { Id = Guid.Parse("90000000-0000-0000-0000-000000000001"), Group = "Category", Key = "VIEW_CATEGORIES", Description = "View category" },
+                new Permission { Id = Guid.Parse("90000000-0000-0000-0000-000000000002"), Group = "Category", Key = "ADD_CATEGORIES", Description = "Add new category" },
+                new Permission { Id = Guid.Parse("90000000-0000-0000-0000-000000000003"), Group = "Category", Key = "UPDATE_CATEGORIES", Description = "Update category" },
+                new Permission { Id = Guid.Parse("90000000-0000-0000-0000-000000000004"), Group = "Category", Key = "DELETE_CATEGORIES", Description = "Delete category" },
                 
                 // ------------------ Permissions ------------------
                 new Permission { Id = Guid.Parse("11000000-0000-0000-0000-000000000001"), Group = "Permissions", Key = "VIEW_PERMISSIONS", Description = "View permissions" },
+                new Permission { Id = Guid.Parse("11000000-0000-0000-0000-000000000002"), Group = "Permissions", Key = "UPDATE_PERMISSIONS", Description = "Update permissions" },
+                
+                // ------------------ Policy ------------------
+                new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000001"), Group = "Policies", Key = "ADD_POLICIES", Description = "Add permissions" },
+                new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000002"), Group = "Policies", Key = "DELETE_POLICIES", Description = "Delete permissions" },
+                new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000003"), Group = "Policies", Key = "UPDATE_POLICIES", Description = "Update permissions" },
+                new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000004"), Group = "Policies", Key = "ADD_TOTAL_AMOUNT_RISK_SCORE", Description = "Add total amount risk score" },
+                new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000005"), Group = "Policies", Key = "UPDATE_TOTAL_AMOUNT_RISK_SCORE", Description = "Update total amount risk score" },
+                new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000006"), Group = "Policies", Key = "DELETE_TOTAL_AMOUNT_RISK_SCORE", Description = "Delete total amount risk score" },
 
             };
 

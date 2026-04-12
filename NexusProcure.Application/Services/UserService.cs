@@ -189,6 +189,26 @@ public class UserService : IUserService
         return _mapper.Map<UserDto>(user);
     }
 
+    public async Task<List<UserDto>> SearchUsersAsync(string search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+            return new List<UserDto>();
+    
+        return await _context.Users
+            .Where(u =>
+                EF.Functions.ILike(u.FullName, $"%{search}%") ||
+                EF.Functions.ILike(u.Email, $"%{search}%") ||
+                EF.Functions.ILike(u.Username, $"%{search}%"))
+            .Select(u => new UserDto
+            {
+                Id = u.Id,
+                FullName = u.FullName,
+                Email = u.Email,
+                Username = u.Username
+            })
+            .ToListAsync();
+    }
+
 
     private static string GenerateSecurePassword(int length = 12)
     {

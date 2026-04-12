@@ -2,7 +2,8 @@
 
 public enum DeliveryStatus
 {
-    Pending,
-    InTransit,
-    Delivered
+    Pending = 0,
+    PartiallyReceived = 1,
+    Received = 2,
+    Delayed = 3
 }

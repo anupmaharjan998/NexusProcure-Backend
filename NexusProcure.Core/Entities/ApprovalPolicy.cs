@@ -1,4 +1,5 @@
-﻿using NexusProcure.Core.Enums;
+﻿using NexusProcure.Core.Entities.Inventory;
+using NexusProcure.Core.Enums;
 
 namespace NexusProcure.Core.Entities;
 
@@ -7,7 +8,7 @@ public class ApprovalPolicy
     public Guid Id { get; set; }
 
     public Guid CategoryId { get; set; }
-    public Category Category { get; set; }
+    public InventoryCategory Category { get; set; }
     
     public RiskLevel RiskLevel { get; set; }
 

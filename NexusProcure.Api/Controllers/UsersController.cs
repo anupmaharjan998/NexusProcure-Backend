@@ -81,6 +81,15 @@ public class UsersController : BaseApiController
         var updated = await _userService.UserProfileUpdateAsync(userId, dto);
         return updated == null ? NotFound() : Ok(updated);
     }
+    
+    
+    [HttpGet("search")]
+    [Authorize]
+    public async Task<IActionResult> GetUserBySearch([FromQuery] string search)
+    {
+        var users = await _userService.SearchUsersAsync(search);
+        return Ok(users); // return empty list if no match
+    }
 
     
 }

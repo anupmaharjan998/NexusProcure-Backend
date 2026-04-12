@@ -20,12 +20,12 @@ public class CommonService : ICommonService
 
     public async Task<List<CategoryResponse>> GetAllCategoryAsync()
     {
-        return await _context.Categories.Select(v => _mapper.Map<CategoryResponse>(v)).ToListAsync();
+        return await _context.InventoryCategories.Select(v => _mapper.Map<CategoryResponse>(v)).ToListAsync();
     }
     
     public async Task<CategoryResponse?> GetByCategoryByIdAsync(Guid id)
     {
-        var category = await _context.Categories
+        var category = await _context.InventoryCategories
             .FirstOrDefaultAsync(r => r.Id == id);
 
         return category == null ? null : _mapper.Map<CategoryResponse>(category);
@@ -34,7 +34,7 @@ public class CommonService : ICommonService
     public async Task<CategoryResponse> AddCategoryAsync(CategoryRequest request)
     {
         var category = _mapper.Map<Category>(request);
-        _context.Categories.Add(category);
+       // _context.Categories.Add(category);
         await _context.SaveChangesAsync();
         return _mapper.Map<CategoryResponse>(category);
     }
@@ -42,12 +42,12 @@ public class CommonService : ICommonService
     
     public async Task<CategoryResponse> UpdateCategoryAsync(Guid id, CategoryRequest dto)
     {
-        var category = await _context.Categories.FindAsync(id);
+        var category = await _context.InventoryCategories.FindAsync(id);
         if (category == null) return null;
         
         if (!string.IsNullOrEmpty(dto.Name)) category.Name = dto.Name;
         category.Description = dto.Description;
-        category.Type = dto.Type;
+        //category.Type = dto.Type;
         category.RiskWeight = dto.RiskWeight;
         
         await _context.SaveChangesAsync();
@@ -57,10 +57,10 @@ public class CommonService : ICommonService
 
     public async Task<bool> DeleteCategoryAsync(Guid id)
     {
-        var category = await _context.Categories.FindAsync(id);
+        var category = await _context.InventoryCategories.FindAsync(id);
         if (category == null) return false;
 
-        _context.Categories.Remove(category);
+        _context.InventoryCategories.Remove(category);
         await _context.SaveChangesAsync();
         return true;
     }

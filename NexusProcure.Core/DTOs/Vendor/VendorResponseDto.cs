@@ -15,7 +15,8 @@ public class VendorResponseDto
     public TaxType? TaxType { get; set; }
     public string? TaxId { get; set; }
     
-    public Guid? CategoryId { get; set; }
+    public List<Guid> CategoryIds { get; set; }
+    public List<string> CategoryNames { get; set; } = new();
     public string Status { get; set; } = null!;
     
     public string? BankName { get; set; }

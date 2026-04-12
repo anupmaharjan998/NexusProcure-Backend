@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces.RequestForQuotation;
 
 namespace NexusProcure.Api.Controllers;
@@ -13,6 +14,7 @@ public class RfqController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAllRfq() => Ok(await _rfqService.GetAllRfqAsync());
 
 

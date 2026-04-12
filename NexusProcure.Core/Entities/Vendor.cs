@@ -1,4 +1,5 @@
-﻿using NexusProcure.Core.Enums;
+﻿using NexusProcure.Core.Entities.Inventory;
+using NexusProcure.Core.Enums;
 
 namespace NexusProcure.Core.Entities;
 
@@ -22,9 +23,7 @@ public class Vendor
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     
-    // Foreign key to Category table
-    public Guid? CategoryId { get; set; }
-    public Category Category { get; set; }
-
+    
+    public ICollection<VendorCategory> VendorCategories { get; set; } = new List<VendorCategory>();
     public ICollection<VendorDocument>? Documents { get; set; }
 }

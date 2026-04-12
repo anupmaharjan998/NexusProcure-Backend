@@ -15,6 +15,7 @@ public class CommonController : BaseApiController
     }
     
     [HttpGet("getAllCategories")]
+    [Authorize]
     public async Task<IActionResult> GetAllCategory()
     {
         var result = await _commonService.GetAllCategoryAsync();
@@ -22,6 +23,7 @@ public class CommonController : BaseApiController
     }
 
     [HttpPost("addCategory")]
+    [Authorize]
     public async Task<IActionResult> AddCategory([FromBody] CategoryRequest request)
     {
         var result = await _commonService.AddCategoryAsync(request);
@@ -29,6 +31,7 @@ public class CommonController : BaseApiController
     }
     
     [HttpGet("get-category/{id}")]
+    [Authorize]
     public async Task<IActionResult> GetCategoryById(Guid id)
     {
         var role = await _commonService.GetByCategoryByIdAsync(id);
@@ -36,6 +39,7 @@ public class CommonController : BaseApiController
     }
     
     [HttpPut("{id}/update-category")]
+    [Authorize]
     public async Task<IActionResult> Update(Guid id, CategoryRequest dto)
     {
         var updated = await _commonService.UpdateCategoryAsync(id, dto);
@@ -43,6 +47,7 @@ public class CommonController : BaseApiController
     }
 
     [HttpDelete("{id}/delete-category")]
+    [Authorize]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _commonService.DeleteCategoryAsync(id);

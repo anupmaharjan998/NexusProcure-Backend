@@ -54,6 +54,105 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.ToTable("ApprovalDelegations");
                 });
 
+            modelBuilder.Entity("NexusProcure.Core.DTOs.DashboardStatsDto", b =>
+                {
+                    b.Property<int>("ActivePurchaseOrders")
+                        .HasColumnType("integer")
+                        .HasColumnName("active_orders");
+
+                    b.Property<int>("PendingRequisitionApprovals")
+                        .HasColumnType("integer")
+                        .HasColumnName("pending_requisition_approvals");
+
+                    b.Property<int>("TotalDepartments")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_departments");
+
+                    b.Property<int>("TotalPurchaseOrders")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_purchase_orders");
+
+                    b.Property<int>("TotalQuotations")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_quotations");
+
+                    b.Property<int>("TotalRequisitions")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_requisitions");
+
+                    b.Property<int>("TotalRoles")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_roles");
+
+                    b.Property<int>("TotalUsers")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_users");
+
+                    b.Property<int>("TotalVendors")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_vendors");
+
+                    b.ToTable("DashboardStatsDto");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.DTOs.DeliveryDto", b =>
+                {
+                    b.Property<DateTime>("DeliveryDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivery_date");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("PoNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("po_number");
+
+                    b.Property<int>("TotalItems")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_items");
+
+                    b.Property<string>("VendorName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("vendor_name");
+
+                    b.ToTable("DeliveryDto");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.DTOs.RecentPurchaseOrderDto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("PoNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("po_number");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("total_amount");
+
+                    b.Property<int>("TotalItems")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_items");
+
+                    b.Property<string>("VendorName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("vendor_name");
+
+                    b.ToTable("RecentPurchaseOrderDto");
+                });
+
             modelBuilder.Entity("NexusProcure.Core.Entities.Approval", b =>
                 {
                     b.Property<Guid>("Id")
@@ -222,31 +321,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.ToTable("AuditLogs");
                 });
 
-            modelBuilder.Entity("NexusProcure.Core.Entities.Category", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("RiskWeight")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Categories");
-                });
-
             modelBuilder.Entity("NexusProcure.Core.Entities.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -268,6 +342,318 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasIndex("HeadId");
 
                     b.ToTable("Departments");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.GoodsReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("InventoryProcessingError")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InventoryProcessingStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PurchaseOrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ReceivedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ReceivedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchaseOrderId");
+
+                    b.HasIndex("ReceivedById");
+
+                    b.ToTable("GoodsReceipts");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.GoodsReceiptItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GoodsReceiptId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("InventoryInserted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("InventoryInsertedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("InventoryItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PurchaseOrderItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityReceived")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoodsReceiptId");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("PurchaseOrderItemId");
+
+                    b.ToTable("GoodsReceiptItems");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InventoryItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsReturned")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.ToTable("InventoryAssignments");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryAssignmentHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AssignedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AssignedToId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InventoryItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UnassignedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UnassignedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedById");
+
+                    b.HasIndex("AssignedToId");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("UnassignedById");
+
+                    b.ToTable("InventoryAssignmentHistories");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CategoryCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ParentCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RiskWeight")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryCode")
+                        .IsUnique();
+
+                    b.HasIndex("ParentCategoryId");
+
+                    b.ToTable("InventoryCategories");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AssignedToId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Barcode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("InventoryCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SerialNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedToId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("InventoryCategoryId");
+
+                    b.HasIndex("SKU")
+                        .IsUnique();
+
+                    b.ToTable("InventoryItems");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.Stock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AvailableQuantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("InventoryItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ReservedQuantity")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.ToTable("Stocks");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.StockTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InventoryItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StockTransactions");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.InventoryItem", b =>
@@ -293,7 +679,7 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("InventoryItems");
+                    b.ToTable("InventoryItem");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Permission", b =>
@@ -525,9 +911,9 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("60000000-0000-0000-0000-000000000006"),
-                            Description = "Return assigned asset",
+                            Description = "Unassigned asset from employee",
                             Group = "Inventory",
-                            Key = "RETURN_ASSET"
+                            Key = "UNASSIGN_ASSET"
                         },
                         new
                         {
@@ -573,10 +959,80 @@ namespace NexusProcure.Infrastructure.Migrations
                         },
                         new
                         {
+                            Id = new Guid("90000000-0000-0000-0000-000000000002"),
+                            Description = "Add new category",
+                            Group = "Category",
+                            Key = "ADD_CATEGORIES"
+                        },
+                        new
+                        {
+                            Id = new Guid("90000000-0000-0000-0000-000000000003"),
+                            Description = "Update category",
+                            Group = "Category",
+                            Key = "UPDATE_CATEGORIES"
+                        },
+                        new
+                        {
+                            Id = new Guid("90000000-0000-0000-0000-000000000004"),
+                            Description = "Delete category",
+                            Group = "Category",
+                            Key = "DELETE_CATEGORIES"
+                        },
+                        new
+                        {
                             Id = new Guid("11000000-0000-0000-0000-000000000001"),
                             Description = "View permissions",
                             Group = "Permissions",
                             Key = "VIEW_PERMISSIONS"
+                        },
+                        new
+                        {
+                            Id = new Guid("11000000-0000-0000-0000-000000000002"),
+                            Description = "Update permissions",
+                            Group = "Permissions",
+                            Key = "UPDATE_PERMISSIONS"
+                        },
+                        new
+                        {
+                            Id = new Guid("12000000-0000-0000-0000-000000000001"),
+                            Description = "Add permissions",
+                            Group = "Policies",
+                            Key = "ADD_POLICIES"
+                        },
+                        new
+                        {
+                            Id = new Guid("12000000-0000-0000-0000-000000000002"),
+                            Description = "Delete permissions",
+                            Group = "Policies",
+                            Key = "DELETE_POLICIES"
+                        },
+                        new
+                        {
+                            Id = new Guid("12000000-0000-0000-0000-000000000003"),
+                            Description = "Update permissions",
+                            Group = "Policies",
+                            Key = "UPDATE_POLICIES"
+                        },
+                        new
+                        {
+                            Id = new Guid("12000000-0000-0000-0000-000000000004"),
+                            Description = "Add total amount risk score",
+                            Group = "Policies",
+                            Key = "ADD_TOTAL_AMOUNT_RISK_SCORE"
+                        },
+                        new
+                        {
+                            Id = new Guid("12000000-0000-0000-0000-000000000005"),
+                            Description = "Update total amount risk score",
+                            Group = "Policies",
+                            Key = "UPDATE_TOTAL_AMOUNT_RISK_SCORE"
+                        },
+                        new
+                        {
+                            Id = new Guid("12000000-0000-0000-0000-000000000006"),
+                            Description = "Delete total amount risk score",
+                            Group = "Policies",
+                            Key = "DELETE_TOTAL_AMOUNT_RISK_SCORE"
                         });
                 });
 
@@ -640,6 +1096,9 @@ namespace NexusProcure.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("InventoryCategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("ItemName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -660,6 +1119,8 @@ namespace NexusProcure.Infrastructure.Migrations
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InventoryCategoryId");
 
                     b.HasIndex("PurchaseOrderId");
 
@@ -1209,7 +1670,57 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("90000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("90000000-0000-0000-0000-000000000003")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("90000000-0000-0000-0000-000000000004")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("11000000-0000-0000-0000-000000000001")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("11000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("12000000-0000-0000-0000-000000000001")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("12000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("12000000-0000-0000-0000-000000000003")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("12000000-0000-0000-0000-000000000004")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("12000000-0000-0000-0000-000000000005")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("12000000-0000-0000-0000-000000000006")
                         });
                 });
 
@@ -1346,9 +1857,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<string>("BankName")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("CategoryId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("CompanyName")
                         .HasColumnType("text");
 
@@ -1357,6 +1865,9 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("InventoryCategoryId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PaymentTerms")
                         .IsRequired()
@@ -1386,9 +1897,24 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
+                    b.HasIndex("InventoryCategoryId");
 
                     b.ToTable("Vendors");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.VendorCategory", b =>
+                {
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("VendorId", "CategoryId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("VendorCategory");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.VendorDocument", b =>
@@ -1463,7 +1989,7 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.ApprovalPolicy", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.Category", "Category")
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1520,6 +2046,141 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Navigation("Head");
                 });
 
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.GoodsReceipt", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.PurchaseOrder", "PurchaseOrder")
+                        .WithMany()
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "ReceivedBy")
+                        .WithMany()
+                        .HasForeignKey("ReceivedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PurchaseOrder");
+
+                    b.Navigation("ReceivedBy");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.GoodsReceiptItem", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.GoodsReceipt", "GoodsReceipt")
+                        .WithMany("Items")
+                        .HasForeignKey("GoodsReceiptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryItem", "InventoryItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("NexusProcure.Core.Entities.PurchaseOrderItem", "PurchaseOrderItem")
+                        .WithMany()
+                        .HasForeignKey("PurchaseOrderItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("GoodsReceipt");
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("PurchaseOrderItem");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryAssignment", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryItem", "InventoryItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryItem");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryAssignmentHistory", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.User", "AssignedBy")
+                        .WithMany()
+                        .HasForeignKey("AssignedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "AssignedTo")
+                        .WithMany()
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryItem", "InventoryItem")
+                        .WithMany("AssignmentHistories")
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "UnassignedBy")
+                        .WithMany()
+                        .HasForeignKey("UnassignedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AssignedBy");
+
+                    b.Navigation("AssignedTo");
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("UnassignedBy");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryCategory", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "ParentInventoryCategory")
+                        .WithMany("SubCategories")
+                        .HasForeignKey("ParentCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ParentInventoryCategory");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryItem", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.User", "AssignedTo")
+                        .WithMany()
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "InventoryCategory")
+                        .WithMany("Items")
+                        .HasForeignKey("InventoryCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssignedTo");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("InventoryCategory");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.Stock", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryItem", "InventoryItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryItem");
+                });
+
             modelBuilder.Entity("NexusProcure.Core.Entities.PurchaseOrder", b =>
                 {
                     b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.Quotation", "Quotation")
@@ -1549,11 +2210,17 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.PurchaseOrderItem", b =>
                 {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "InventoryCategory")
+                        .WithMany()
+                        .HasForeignKey("InventoryCategoryId");
+
                     b.HasOne("NexusProcure.Core.Entities.PurchaseOrder", "PurchaseOrder")
                         .WithMany("Items")
                         .HasForeignKey("PurchaseOrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("InventoryCategory");
 
                     b.Navigation("PurchaseOrder");
                 });
@@ -1650,7 +2317,7 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Requisition", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.Category", "Category")
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1721,12 +2388,28 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.Category", "Category")
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", null)
                         .WithMany("Vendors")
+                        .HasForeignKey("InventoryCategoryId");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.VendorCategory", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
+                        .WithMany("VendorCategories")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Vendor", "Vendor")
+                        .WithMany("VendorCategories")
+                        .HasForeignKey("VendorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("Vendor");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.VendorDocument", b =>
@@ -1740,16 +2423,32 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Navigation("Vendor");
                 });
 
-            modelBuilder.Entity("NexusProcure.Core.Entities.Category", b =>
-                {
-                    b.Navigation("Vendors");
-                });
-
             modelBuilder.Entity("NexusProcure.Core.Entities.Department", b =>
                 {
                     b.Navigation("Requisitions");
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.GoodsReceipt", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryCategory", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("SubCategories");
+
+                    b.Navigation("VendorCategories");
+
+                    b.Navigation("Vendors");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryItem", b =>
+                {
+                    b.Navigation("AssignmentHistories");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.InventoryItem", b =>
@@ -1805,6 +2504,8 @@ namespace NexusProcure.Infrastructure.Migrations
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
                 {
                     b.Navigation("Documents");
+
+                    b.Navigation("VendorCategories");
                 });
 #pragma warning restore 612, 618
         }

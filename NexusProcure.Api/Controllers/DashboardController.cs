@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 
 namespace NexusProcure.Api.Controllers;
@@ -13,9 +14,10 @@ public class DashboardController : BaseApiController
     }
 
     [HttpGet("stats")]
+    [Authorize]
     public async Task<IActionResult> GetStats()
     {
-        var stats = await _dashboardService.GetStatsAsync();
+        var stats = await _dashboardService.GetDashboardAsync();
         return Ok(stats);
     }
 }

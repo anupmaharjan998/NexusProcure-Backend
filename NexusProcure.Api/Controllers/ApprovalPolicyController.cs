@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs.Approval;
 
@@ -21,6 +22,7 @@ public class ApprovalPolicyController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Policy = "ADD_POLICIES")]
     public async Task<IActionResult> Create([FromBody] ApprovalPolicyCreateDto dto)
     {
         await _policyService.CreateAsync(dto);
@@ -28,6 +30,7 @@ public class ApprovalPolicyController : BaseApiController
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = "DELETE_POLICIES")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _policyService.DeleteAsync(id);

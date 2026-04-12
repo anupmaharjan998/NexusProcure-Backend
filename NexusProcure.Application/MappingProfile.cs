@@ -41,8 +41,13 @@ public class MappingProfile : Profile
         
         // Vendor
         CreateMap<VendorRequestDto, Vendor>();
+        
         CreateMap<Vendor, VendorResponseDto>()
-            .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.Category != null ? src.Category.Id : (Guid?)null));
+            .ForMember(dest => dest.CategoryIds,
+                opt => opt.MapFrom(src => src.VendorCategories.Select(vc => vc.CategoryId).ToList()))
+            .ForMember(dest => dest.CategoryNames,
+                opt => opt.MapFrom(src => src.VendorCategories.Select(vc => vc.Category.Name).ToList()));
+        
         CreateMap<VendorDocument, VendorDocumentResponseDto>();
         
         CreateMap<Category, CategoryResponse>();

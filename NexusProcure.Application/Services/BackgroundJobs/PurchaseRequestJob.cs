@@ -155,7 +155,7 @@ public class PurchaseRequestJob : IPurchaseRequestJob
 
             <p>
                 <strong>Purchase Order Details</strong><br/>
-                Purchase Order ID: {po.Id}<br/>
+                Purchase Order ID: {po.PurchaseOrderNumber}<br/>
                 Order Date: {po.OrderDate:yyyy-MM-dd}
             </p>
 
