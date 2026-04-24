@@ -134,6 +134,19 @@ public class NexusProcureDbContext : DbContext
             .HasForeignKey(u => u.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
         
+        // User
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.Manager)
+            .WithMany(u => u.Subordinates)
+            .HasForeignKey(u => u.ManagerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.DelegateUser)
+            .WithMany()
+            .HasForeignKey(u => u.DelegateUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
         // Vendor → Category (optional 1-M)
 
         modelBuilder.Entity<VendorCategory>()

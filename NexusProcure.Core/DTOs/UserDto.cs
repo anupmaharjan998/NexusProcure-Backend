@@ -8,49 +8,65 @@ public class UserDto
     public string FullName { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+
     public string? PhoneNumber { get; set; }
     public string? Address { get; set; }
+
     public Guid? RoleId { get; set; }
     public string? RoleName { get; set; }
+
     public Guid? DepartmentId { get; set; }
     public string? DepartmentName { get; set; }
+
     public bool IsActive { get; set; }
+
     public string? ProfileImageUrl { get; set; }
+
+    // Manager Info
+    public Guid? ManagerId { get; set; }
+    public string? ManagerName { get; set; }
 }
 
 public class CreateUserDto
 {
-    [Required(ErrorMessage = "Please enter full name.")]
+    [Required]
     public string FullName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Please enter username.")]
+    [Required]
     public string Username { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Please enter email address.")]
+    [Required]
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
-    
-    [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
+
+    [RegularExpression(@"^[0-9]{10}$")]
     public string? PhoneNumber { get; set; }
-    
+
     public bool IsActive { get; set; }
 
-    [Required(ErrorMessage = "Please select the role.")]
+    [Required]
     public Guid RoleId { get; set; }
 
     public Guid? DepartmentId { get; set; }
+    
+    public Guid? ManagerId { get; set; }
 }
 
 public class UpdateUserDto
 {
-    public string FullName { get; set; }
+    public string? FullName { get; set; }
+
     [EmailAddress]
     public string? Email { get; set; }
+
     public Guid? RoleId { get; set; }
     public Guid? DepartmentId { get; set; }
-    
-    [RegularExpression(@"^[0-9]{10}$", ErrorMessage = "Phone number must be exactly 10 digits.")]
+
+    public Guid? ManagerId { get; set; } 
+
+    [RegularExpression(@"^[0-9]{10}$")]
     public string? PhoneNumber { get; set; }
+
     public bool IsActive { get; set; }
 }
 
