@@ -57,4 +57,18 @@ public class PurchaseOrderReceiptController : BaseApiController
 
         return Ok(result);
     }
+
+    [HttpPut("{purchaseOrderId:guid}/delivery-date")]
+    public async Task<IActionResult> UpdateDeliveryDate(Guid purchaseOrderId, [FromBody] DateTime newArrivalDate)
+    {
+        var updated = await _purchaseOrderReceiptService.ChangeArrivalDate(purchaseOrderId, newArrivalDate);
+
+        if (!updated)
+            return NotFound("Purchase Order not found.");
+
+        return Ok("Delivery date updated successfully.");
+    }
+    
+    
+    
 }

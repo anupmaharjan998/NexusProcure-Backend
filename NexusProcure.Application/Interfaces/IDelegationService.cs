@@ -1,18 +1,12 @@
-﻿using NexusProcure.Core.DTOs.Approval;
+﻿using NexusProcure.Core.DTOs.Delegation;
+using NexusProcure.Core.Entities;
 
 namespace NexusProcure.Application.Interfaces;
 
 public interface IDelegationService
 {
-    Task<DelegationResponseDto> CreateAsync(CreateDelegationDto dto);
-
-    Task<List<DelegationResponseDto>> GetActiveDelegationsAsync();
-
-    Task DeactivateAsync(Guid delegationId);
-
-    Task<ApprovalDelegation?> GetValidDelegationAsync(
-        Guid fromUserId,
-        Guid toUserId,
-        Guid? categoryId,
-        Guid? approvalLevelId);
+    Task<DelegationDto> CreateAsync(Guid userId, CreateDelegationDto dto);
+    Task<bool> DeactivateAsync(Guid delegationId);
+    Task<User?> GetActiveDelegateAsync(Guid userId);
+    Task ExpireDelegationsAsync();
 }

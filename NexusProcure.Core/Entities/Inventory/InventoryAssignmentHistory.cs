@@ -1,4 +1,6 @@
-﻿namespace NexusProcure.Core.Entities.Inventory;
+﻿using System;
+
+namespace NexusProcure.Core.Entities.Inventory;
 
 public class InventoryAssignmentHistory
 {
@@ -10,15 +12,13 @@ public class InventoryAssignmentHistory
     public Guid AssignedToId { get; set; }
     public User AssignedTo { get; set; } = null!;
 
-    public Guid AssignedById { get; set; }
-    public User AssignedBy { get; set; } = null!;
-
     public DateTime AssignedDate { get; set; }
-
-    public Guid? UnassignedById { get; set; }
-    public User? UnassignedBy { get; set; }
-
     public DateTime? UnassignedDate { get; set; }
 
+    public string ActionType { get; set; }
+
+    public Guid PerformedById { get; set; }
+    public User PerformedBy { get; set; } = null!;
+
     public string? Notes { get; set; }
-}
+}   

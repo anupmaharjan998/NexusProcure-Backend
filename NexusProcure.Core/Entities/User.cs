@@ -27,10 +27,6 @@ public class User : BaseEntity
     public User? Manager { get; set; }
     public ICollection<User> Subordinates { get; set; } = new List<User>();
 
-    // Approval Delegation (Optional)
-    public Guid? DelegateUserId { get; set; }
-    public User? DelegateUser { get; set; }
-
     // Password Reset
     public Guid? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }
@@ -43,4 +39,5 @@ public class User : BaseEntity
     // Navigation
     public ICollection<Requisition> Requisitions { get; set; } = new List<Requisition>();
     public ICollection<AssetAssignment> AssetAssignments { get; set; } = new List<AssetAssignment>();
+    public ICollection<UserDelegation> Delegations { get; set; } = new List<UserDelegation>();
 }

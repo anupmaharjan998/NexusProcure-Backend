@@ -1,12 +1,18 @@
 ﻿namespace NexusProcure.Core.Entities;
 
-public class AuditLog
+public class AuditLog : BaseEntity
 {
     public Guid Id { get; set; }
-    public string Action { get; set; } = string.Empty;
-    public Guid PerformedById { get; set; }
-    public User PerformedBy { get; set; }
 
-    public DateTime Timestamp { get; set; }
-    public string Details { get; set; } = string.Empty;
+    public string EntityName { get; set; } // e.g. "UserDelegation"
+    public Guid EntityId { get; set; }
+
+    public string Action { get; set; } // Created, Updated, Deleted, Expired
+
+    public Guid? PerformedBy { get; set; } // User who triggered action
+
+    public string? OldValues { get; set; } // JSON
+    public string? NewValues { get; set; } // JSON
+
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }

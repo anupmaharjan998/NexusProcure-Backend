@@ -8,4 +8,6 @@ public interface IPurchaseOrderReceiptService
     
     Task<IEnumerable<PurchaseOrderDeliveryListDto>> GetReceivingDeliveriesAsync(PurchaseOrderDeliveryQueryDto query);
     Task<PurchaseOrderDeliveryListDto?> GetReceivingDeliveryByPurchaseOrderIdAsync(Guid purchaseOrderId);
+
+    Task<bool> ChangeArrivalDate(Guid purchaseOrderId, DateTime newArrivalDate);
 }

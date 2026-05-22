@@ -171,6 +171,8 @@ builder.Services.AddScoped<IRfqExcelService, RfqExcelService>();
 builder.Services.AddScoped<IInventoryCategoryService, InventoryCategoryService>();
 builder.Services.AddScoped<IInventoryItemService, InventoryItemService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IInventoryStockService, InventoryStockService>();
+builder.Services.AddScoped<IInventoryRequestService, InventoryRequestService>();
 
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
@@ -184,6 +186,9 @@ builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 //PO Items Receive
 builder.Services.AddScoped<IPurchaseOrderReceiptService, PurchaseOrderReceiptService>();
 builder.Services.AddScoped<IInventoryCodeService, InventoryCodeService>();
+
+// Audit Log
+builder.Services.AddScoped<IAuditService, AuditService >();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -285,7 +290,11 @@ RecurringJob.AddOrUpdate<IPurchaseRequestJob>(
     Cron.Daily
 );
 
-
+RecurringJob.AddOrUpdate<IDelegationService>(
+    "expire-delegations",
+    service => service.ExpireDelegationsAsync(),
+    Cron.Daily
+);
 
 
 // // Swagger

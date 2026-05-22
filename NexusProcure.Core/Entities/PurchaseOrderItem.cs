@@ -16,4 +16,7 @@ public class PurchaseOrderItem
     
     public Guid? InventoryCategoryId { get; set; }
     public InventoryCategory? InventoryCategory { get; set; }
+
+    public string Unit { get; set; } = "pcs";
+    public int ReorderLevel { get; set; } = 5;
 }

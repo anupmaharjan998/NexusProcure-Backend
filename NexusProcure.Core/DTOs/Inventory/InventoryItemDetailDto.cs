@@ -1,4 +1,8 @@
-﻿namespace NexusProcure.Core.DTOs.Inventory;
+﻿using System;
+using System.Collections.Generic;
+using NexusProcure.Core.Enums;
+
+namespace NexusProcure.Core.DTOs.Inventory;
 
 public class InventoryItemDetailDto
 {
@@ -11,8 +15,8 @@ public class InventoryItemDetailDto
     public string Category { get; set; }
     public Guid CategoryId { get; set; }
 
-    public string Status { get; set; }
-    public string Condition { get; set; }
+    public InventoryItemStatus Status { get; set; }
+    public InventoryItemCondition Condition { get; set; }
     public string Location { get; set; }
 
     public string AssignedTo { get; set; }

@@ -1,4 +1,6 @@
-﻿namespace NexusProcure.Core.Entities.Inventory;
+﻿using System;
+
+namespace NexusProcure.Core.Entities.Inventory;
 
 public class InventoryAssignment
 {
