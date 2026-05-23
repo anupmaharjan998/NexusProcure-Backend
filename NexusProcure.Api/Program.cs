@@ -204,6 +204,27 @@ builder.Services.AddScoped<IPurchaseRequestJob, PurchaseRequestJob>();
 builder.Services.AddScoped<IInventoryReceiptJob, InventoryReceiptJob>();
 
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("MANAGE_DELEGATION", policy =>
+        policy.RequireAssertion(context =>
+            context.User.Claims.Any(c =>
+                (c.Type == "Permission" ||
+                 c.Type == "permission" ||
+                 c.Type == "permissions") &&
+                c.Value == "MANAGE_DELEGATION")));
+
+    options.AddPolicy("DELEGATION", policy =>
+        policy.RequireAssertion(context =>
+            context.User.Claims.Any(c =>
+                (c.Type == "Permission" ||
+                 c.Type == "permission" ||
+                 c.Type == "permissions") &&
+                (c.Value == "DELEGATION" ||
+                 c.Value == "MANAGE_DELEGATION"))));
+});
+
+
 builder.Services.AddScoped<HangfireJobLoggingFilter>();
 
 // Register Hangfire with PostgreSQL storage

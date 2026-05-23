@@ -116,6 +116,7 @@ public class NexusProcureDbContext : DbContext
             .IncrementsBy(1);
         
         
+        
         modelBuilder.Entity<PurchaseOrder>()
             .HasOne(po => po.Requisition)
             .WithMany(r => r.PurchaseOrders)
@@ -151,17 +152,39 @@ public class NexusProcureDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
         
         // User Delegation
-        modelBuilder.Entity<UserDelegation>()
-            .HasOne(d => d.User)
-            .WithMany(u => u.Delegations)
-            .HasForeignKey(d => d.UserId)
-            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<UserDelegation>(entity =>
+        {
+            entity.HasKey(d => d.Id);
 
-        modelBuilder.Entity<UserDelegation>()
-            .HasOne(d => d.DelegateUser)
-            .WithMany()
-            .HasForeignKey(d => d.DelegateUserId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(d => d.Scope)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(d => d.Reason)
+                .HasMaxLength(500);
+
+            entity.Property(d => d.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(d => d.CreatedAt)
+                .HasDefaultValueSql("NOW()");
+
+            entity.HasOne(d => d.User)
+                .WithMany(u => u.Delegations)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.DelegateUser)
+                .WithMany()
+                .HasForeignKey(d => d.DelegateUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(d => d.UserId);
+
+            entity.HasIndex(d => d.DelegateUserId);
+
+            entity.HasIndex(d => new { d.UserId, d.IsActive });
+        });
         
         // Vendor → Category (optional 1-M)
 

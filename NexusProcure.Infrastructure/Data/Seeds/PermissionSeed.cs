@@ -77,6 +77,10 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000004"), Group = "Policies", Key = "ADD_TOTAL_AMOUNT_RISK_SCORE", Description = "Add total amount risk score" },
                 new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000005"), Group = "Policies", Key = "UPDATE_TOTAL_AMOUNT_RISK_SCORE", Description = "Update total amount risk score" },
                 new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000006"), Group = "Policies", Key = "DELETE_TOTAL_AMOUNT_RISK_SCORE", Description = "Delete total amount risk score" },
+                
+                // ------------------ Delegation ------------------
+                new Permission { Id = Guid.Parse("13000000-0000-0000-0000-000000000001"), Group = "Delegation", Key = "MANAGE_DELEGATION", Description = "Manage all user delegations" },
+                new Permission { Id = Guid.Parse("13000000-0000-0000-0000-000000000002"), Group = "Delegation", Key = "DELEGATION", Description = "Create and manage own delegation" },
 
             };
 

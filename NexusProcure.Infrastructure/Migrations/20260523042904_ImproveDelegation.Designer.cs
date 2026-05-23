@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523042904_ImproveDelegation")]
+    partial class ImproveDelegation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1243,20 +1246,6 @@ namespace NexusProcure.Infrastructure.Migrations
                             Description = "Delete total amount risk score",
                             Group = "Policies",
                             Key = "DELETE_TOTAL_AMOUNT_RISK_SCORE"
-                        },
-                        new
-                        {
-                            Id = new Guid("13000000-0000-0000-0000-000000000001"),
-                            Description = "Manage all user delegations",
-                            Group = "Delegation",
-                            Key = "MANAGE_DELEGATION"
-                        },
-                        new
-                        {
-                            Id = new Guid("13000000-0000-0000-0000-000000000002"),
-                            Description = "Create and manage own delegation",
-                            Group = "Delegation",
-                            Key = "DELEGATION"
                         });
                 });
 
@@ -1952,16 +1941,6 @@ namespace NexusProcure.Infrastructure.Migrations
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("12000000-0000-0000-0000-000000000006")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("13000000-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("13000000-0000-0000-0000-000000000002")
                         });
                 });
 
