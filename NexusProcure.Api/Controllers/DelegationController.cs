@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
-using NexusProcure.Core.DTOs.Approval;
+using NexusProcure.Core.DTOs.Delegation;
 
 namespace NexusProcure.Api.Controllers;
 
@@ -14,23 +14,23 @@ public class DelegationController : Controller
     }
 
     [HttpPost("create")]
-    public async Task<IActionResult> CreateDelegation([FromBody] CreateDelegationDto dto)
+    public async Task<IActionResult> CreateDelegation(Guid userId, [FromBody] CreateDelegationDto dto)
     {
-        await _delegationService. CreateAsync(dto);
+        await _delegationService.CreateAsync(userId, dto);
         return Ok(new { message = "Delegation created" });
     }
 
     [HttpGet("{userId}")]
     public async Task<IActionResult> GetDelegations(Guid userId)
     {
-        var delegations = await _delegationService.GetActiveDelegationsAsync();
+        var delegations = await _delegationService.GetActiveDelegateAsync(userId);
         return Ok(delegations);
     }
 
-    // [HttpDelete("{id}")]
-    // public async Task<IActionResult> DeleteDelegation(Guid id)
-    // {
-    //     await _delegationService.DeleteAsync(id);
-    //     return NoContent();
-    // }
+    [HttpPut("{id}")]
+    public async Task<IActionResult> DeactivateDelegation(Guid id)
+    {
+        await _delegationService.DeactivateAsync(id);
+        return NoContent();
+    }
 }

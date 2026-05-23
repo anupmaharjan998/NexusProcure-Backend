@@ -6,80 +6,141 @@ using NexusProcure.Core.DTOs.Inventory;
 
 namespace NexusProcure.Api.Controllers;
 
+[Authorize]
 public class InventoryController : BaseApiController
 {
     private readonly IInventoryService _inventoryService;
-    private readonly IInventoryCategoryService _inventoryCategoryService;
-    private readonly IInventoryItemService _inventoryItemService;
 
-    public InventoryController(IInventoryService inventoryService, IInventoryCategoryService inventoryCategoryService,
-        IInventoryItemService inventoryItemService)
+    public InventoryController(IInventoryService inventoryService)
     {
         _inventoryService = inventoryService;
-        _inventoryCategoryService = inventoryCategoryService;
-        _inventoryItemService = inventoryItemService;
     }
 
+    // ============================================================
+    // STOCK / CATALOG
+    // ============================================================
 
-    [HttpPost]
-    public async Task<IActionResult> Create(CreateCategoryDto dto)
+    [HttpGet("stocks")]
+    public async Task<IActionResult> GetStocks([FromQuery] InventoryStockQueryParams query)
     {
-        await _inventoryCategoryService.CreateAsync(dto);
-        return Ok();
+        var result = await _inventoryService.GetStocksAsync(query);
+        return Ok(result);
     }
 
-    [HttpGet("tree")]
-    public async Task<IActionResult> GetTree()
+    [HttpGet("stocks/available")]
+    public async Task<IActionResult> GetAvailableStocks()
     {
-        return Ok(await _inventoryCategoryService.GetTreeAsync());
+        var result = await _inventoryService.GetAvailableStocksAsync();
+        return Ok(result);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create(CreateInventoryItemDto dto)
+    [HttpPost("stocks")]
+    [Authorize(Policy = "ADD_INVENTORY_ITEM")]
+    public async Task<IActionResult> CreateStock([FromBody] CreateInventoryStockDto dto)
     {
-        await _inventoryItemService.CreateAsync(dto);
-        return Ok();
+        var userId = GetUserId();
+        var result = await _inventoryService.CreateStockAsync(dto, userId);
+        return Ok(result);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, CreateInventoryItemDto dto)
+    [HttpPut("stocks/{id:guid}")]
+    [Authorize(Policy = "UPDATE_INVENTORY_ITEM")]
+    public async Task<IActionResult> UpdateStock(Guid id, [FromBody] UpdateInventoryStockDto dto)
     {
-        await _inventoryItemService.UpdateAsync(id, dto);
-        return Ok();
+        var userId = GetUserId();
+        var result = await _inventoryService.UpdateStockAsync(id, dto, userId);
+        return Ok(result);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpPost("stocks/{id:guid}/adjust")]
+    [Authorize(Policy = "UPDATE_INVENTORY_ITEM")]
+    public async Task<IActionResult> AdjustStock(Guid id, [FromBody] AdjustInventoryStockDto dto)
     {
-        await _inventoryItemService.DeleteAsync(id);
-        return Ok();
+        var userId = GetUserId();
+        await _inventoryService.AdjustStockAsync(id, dto, userId);
+
+        return Ok(new
+        {
+            Message = "Stock adjusted successfully."
+        });
     }
 
+    // ============================================================
+    // ASSET ITEMS
+    // ============================================================
 
-    [HttpPost("receive/{poId}")]
-    public async Task<IActionResult> Receive(Guid poId)
+    [HttpGet("assets")]
+    public async Task<IActionResult> GetAssets([FromQuery] InventoryQueryParams query)
     {
-        await _inventoryService.ReceiveFromPurchaseOrderAsync(poId);
-        return Ok();
+        var result = await _inventoryService.GetInventoryAsync(query);
+        return Ok(result);
     }
 
-    [HttpPost("assign/{requisitionId}")]
-    public async Task<IActionResult> Assign(Guid requisitionId)
+    [HttpGet("assets/{id:guid}")]
+    public async Task<IActionResult> GetAssetById(Guid id)
     {
-        await _inventoryService.AssignToUserAsync(requisitionId);
-        return Ok();
+        var result = await _inventoryService.GetInventoryItemById(id);
+        return Ok(result);
     }
 
-    [HttpGet("get-all")]
-    public async Task<IActionResult> GetInventory([FromQuery] InventoryQueryParams query)
+    [HttpPost("assets")]
+    [Authorize(Policy = "ADD_INVENTORY_ITEM")]
+    public async Task<IActionResult> CreateAsset([FromBody] CreateInventoryItemDto dto)
     {
-        return Ok(await _inventoryService.GetInventoryAsync(query));
+        var userId = GetUserId();
+        var result = await _inventoryService.CreateItemAsync(dto, userId);
+        return Ok(result);
     }
 
+    [HttpPut("assets/{id:guid}")]
+    [Authorize(Policy = "UPDATE_INVENTORY_ITEM")]
+    public async Task<IActionResult> UpdateAsset(Guid id, [FromBody] UpdateInventoryItemDto dto)
+    {
+        var userId = GetUserId();
+        var result = await _inventoryService.UpdateItemAsync(id, dto, userId);
+        return Ok(result);
+    }
 
-    #region Category
+    [HttpGet("assets/by-stock/{stockId:guid}")]
+    public async Task<IActionResult> GetAvailableAssetsByStock(Guid stockId)
+    {
+        var result = await _inventoryService.GetAvailableAssetsByStockAsync(stockId);
+        return Ok(result);
+    }
 
-    [HttpGet("get-categories")]
+    [HttpPost("assets/{id:guid}/assign")]
+    [Authorize(Policy = "ASSIGN_ASSET")]
+    public async Task<IActionResult> AssignAsset(Guid id, [FromBody] AssignInventoryItemDto dto)
+    {
+        var userId = GetUserId();
+
+        var result = await _inventoryService.AssignItemAsync(id, dto, userId);
+
+        if (result == null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    [HttpPost("assets/{id:guid}/unassign")]
+    [Authorize(Policy = "UNASSIGN_ASSET")]
+    public async Task<IActionResult> UnassignAsset(Guid id)
+    {
+        var userId = GetUserId();
+
+        var result = await _inventoryService.UnassignItemAsync(id, userId);
+
+        if (result == null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    // ============================================================
+    // CATEGORIES
+    // ============================================================
+
+    [HttpGet("categories")]
     public async Task<IActionResult> GetCategories([FromQuery] CategoryQueryParams query)
     {
         var result = await _inventoryService.GetCategoriesAsync(query);
@@ -90,117 +151,102 @@ public class InventoryController : BaseApiController
     [Authorize(Policy = "ADD_CATEGORIES")]
     public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDto dto)
     {
-        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+        var userId = GetUserId();
         await _inventoryService.CreateCategoryAsync(dto, userId);
-        return Ok(new { message = "Category created successfully" });
+
+        return Ok(new
+        {
+            Message = "Category created successfully."
+        });
     }
 
-    [HttpPut("categories/{id}")]
+    [HttpPut("categories/{id:guid}")]
     [Authorize(Policy = "UPDATE_CATEGORIES")]
     public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateInventoryCategoryDto dto)
     {
-        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+        var userId = GetUserId();
         await _inventoryService.UpdateCategoryAsync(id, dto, userId);
-        return Ok();
+
+        return Ok(new
+        {
+            Message = "Category updated successfully."
+        });
     }
 
-    [HttpDelete("categories/{id}")]
+    [HttpDelete("categories/{id:guid}")]
     [Authorize(Policy = "DELETE_CATEGORIES")]
     public async Task<IActionResult> DeleteCategory(Guid id)
     {
         await _inventoryService.DeleteCategoryAsync(id);
-        return Ok();
+
+        return Ok(new
+        {
+            Message = "Category deleted successfully."
+        });
     }
 
-    /* ---------------- Get Leaf Categories ---------------- */
-    [HttpGet("get-leaf-categories-dropdown")]
-    public async Task<IActionResult> GetLeafCategoriesForDropDown()
-    {
-        var result = await _inventoryService.GetLeafCategoriesAsync();
-        return Ok(result);
-    }
-
-    /* ---------------- Get Items By Category ---------------- */
-    [HttpGet("items/by-category/{categoryId}")]
-    public async Task<IActionResult> GetItemsByCategory(Guid categoryId)
-    {
-        var result = await _inventoryService.GetItemsByCategoryAsync(categoryId);
-        return Ok(result);
-    }
-
-    #endregion
-
-
-    #region Inventory Item
-
-    [HttpPost("create-item")]
-    [Authorize(Policy = "ADD_INVENTORY_ITEM")]
-    public async Task<IActionResult> CreateItem([FromBody] CreateInventoryItemDto dto)
-    {
-        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
-        var result = await _inventoryService.CreateItemAsync(dto, userId);
-        return Ok(result);
-    }
-
-    [HttpPut("update-item/{id}")]
-    [Authorize(Policy = "UPDATE_INVENTORY_ITEM")]
-    public async Task<IActionResult> UpdateItem(Guid id, [FromBody] UpdateInventoryItemDto dto)
-    {
-        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
-        var result = await _inventoryService.UpdateItemAsync(id, dto, userId);
-        return Ok(result);
-    }
-
-    [HttpGet("item/{id}")]
-    public async Task<IActionResult> GetInventoryItemById(Guid id)
-    {
-        var result = await _inventoryService.GetInventoryItemById(id);
-        return Ok(result);
-    }
-
-
-    [HttpGet("get-leaf-categories")]
+    [HttpGet("categories/leaf")]
     public async Task<IActionResult> GetLeafCategories()
     {
         var result = await _inventoryService.GetLeafCategories();
         return Ok(result);
     }
 
-    [HttpGet("preview-sku")]
-    public async Task<IActionResult> PreviewSku(string name, Guid categoryId)
+    [HttpGet("categories/leaf-dropdown")]
+    public async Task<IActionResult> GetLeafCategoriesForDropdown()
     {
-        var sku = await _inventoryService.GenerateSkuAsync(name, categoryId);
-        return Ok(sku);
-    }
-
-
-    [HttpPost("{id:guid}/assign")]
-    [Authorize(Policy = "ASSIGN_ASSET")]
-    public async Task<IActionResult> AssignItem(Guid id, [FromBody] AssignInventoryItemDto dto)
-    {
-        var userIdClaim = User.FindFirstValue("userId");
-        if (!Guid.TryParse(userIdClaim, out var assignedBy))
-            return Unauthorized("User id missing.");
-
-        var result = await _inventoryService.AssignItemAsync(id, dto, assignedBy);
-        if (result == null) return NotFound();
-
+        var result = await _inventoryService.GetLeafCategoriesAsync();
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/unassign")]
-    [Authorize(Policy = "UNASSIGN_ASSET")]
-    public async Task<IActionResult> UnassignItem(Guid id)
+    // ============================================================
+    // LEGACY COMPATIBILITY - OPTIONAL
+    // Keep only if old frontend still calls these routes.
+    // Remove later after frontend migration is complete.
+    // ============================================================
+
+    [HttpGet("get-all")]
+    public async Task<IActionResult> LegacyGetInventory([FromQuery] InventoryQueryParams query)
     {
-        var userIdClaim = User.FindFirstValue("userId");
-        if (!Guid.TryParse(userIdClaim, out var unassignedBy))
-            return Unauthorized("User id missing.");
-
-        var result = await _inventoryService.UnassignItemAsync(id, unassignedBy);
-        if (result == null) return NotFound();
-
+        var result = await _inventoryService.GetInventoryAsync(query);
         return Ok(result);
     }
 
-    #endregion
+    [HttpGet("get-categories")]
+    public async Task<IActionResult> LegacyGetCategories([FromQuery] CategoryQueryParams query)
+    {
+        var result = await _inventoryService.GetCategoriesAsync(query);
+        return Ok(result);
+    }
+
+    [HttpGet("get-leaf-categories")]
+    public async Task<IActionResult> LegacyGetLeafCategories()
+    {
+        var result = await _inventoryService.GetLeafCategories();
+        return Ok(result);
+    }
+
+    [HttpGet("get-leaf-categories-dropdown")]
+    public async Task<IActionResult> LegacyGetLeafCategoriesDropdown()
+    {
+        var result = await _inventoryService.GetLeafCategoriesAsync();
+        return Ok(result);
+    }
+
+    [HttpGet("item/{id:guid}")]
+    public async Task<IActionResult> LegacyGetInventoryItemById(Guid id)
+    {
+        var result = await _inventoryService.GetInventoryItemById(id);
+        return Ok(result);
+    }
+
+    private Guid GetUserId()
+    {
+        var userIdClaim = User.FindFirstValue("userId");
+
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            throw new UnauthorizedAccessException("User id missing.");
+
+        return userId;
+    }
 }

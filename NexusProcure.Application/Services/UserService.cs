@@ -36,6 +36,7 @@ public class UserService : IUserService
         var users = await _context.Users
             .Include(u => u.Role)
             .Include(u => u.Department)
+            .Include(u => u.Manager)
             .ToListAsync();
 
         return _mapper.Map<IEnumerable<UserDto>>(users);
@@ -46,6 +47,7 @@ public class UserService : IUserService
         var user = await _context.Users
             .Include(u => u.Role)
             .Include(u => u.Department)
+            .Include(u => u.Manager)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         return user == null ? null : _mapper.Map<UserDto>(user);
@@ -58,8 +60,19 @@ public class UserService : IUserService
         {
             throw new InvalidOperationException("A user with the provided email already exists.");
         }
+        if (dto.ManagerId.HasValue)
+        {
+            var managerExists = await _context.Users
+                .AnyAsync(u => u.Id == dto.ManagerId.Value);
 
+            if (!managerExists)
+                throw new Exception("Invalid ManagerId");
+        }
+        
         var user = _mapper.Map<User>(dto);
+        
+        if (dto.ManagerId == user.Id)
+            throw new Exception("User cannot be their own manager.");
         
         var generatedPassword = GenerateSecurePassword();
         user.PasswordHash = new PasswordHasher<User>().HashPassword(user, generatedPassword);
@@ -87,7 +100,21 @@ public class UserService : IUserService
         if (!string.IsNullOrEmpty(dto.FullName)) user.FullName = dto.FullName;
         if (!string.IsNullOrEmpty(dto.Email)) user.Email = dto.Email;
         if (dto.RoleId.HasValue) user.RoleId = dto.RoleId.Value;
-        if (dto.DepartmentId.HasValue) user.DepartmentId = dto.DepartmentId.Value;
+        if (dto.DepartmentId.HasValue) user.DepartmentId = dto.DepartmentId;
+        if (dto.ManagerId.HasValue)
+        {
+            if (dto.ManagerId == id)
+                throw new Exception("User cannot be their own manager.");
+
+            var managerExists = await _context.Users
+                .AnyAsync(u => u.Id == dto.ManagerId.Value);
+
+            if (!managerExists)
+                throw new Exception("Manager not found");
+
+            user.ManagerId = dto.ManagerId;
+        }
+        
         user.IsActive = dto.IsActive;
 
         await _context.SaveChangesAsync();
@@ -195,6 +222,7 @@ public class UserService : IUserService
             return new List<UserDto>();
     
         return await _context.Users
+            .Include(u => u.Manager)
             .Where(u =>
                 EF.Functions.ILike(u.FullName, $"%{search}%") ||
                 EF.Functions.ILike(u.Email, $"%{search}%") ||
@@ -204,7 +232,9 @@ public class UserService : IUserService
                 Id = u.Id,
                 FullName = u.FullName,
                 Email = u.Email,
-                Username = u.Username
+                Username = u.Username,
+                ManagerId = u.ManagerId,
+                ManagerName = u.Manager != null ? u.Manager.FullName : null
             })
             .ToListAsync();
     }

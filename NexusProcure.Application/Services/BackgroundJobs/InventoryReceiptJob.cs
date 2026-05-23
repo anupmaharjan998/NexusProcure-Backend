@@ -31,6 +31,8 @@ public class InventoryReceiptJob : IInventoryReceiptJob
         if (goodsReceipt == null)
             throw new Exception("Goods receipt not found.");
 
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
         try
         {
             goodsReceipt.InventoryProcessingStatus = InventoryProcessingStatus.Processing;
@@ -40,61 +42,116 @@ public class InventoryReceiptJob : IInventoryReceiptJob
             foreach (var receiptItem in goodsReceipt.Items.Where(x => !x.InventoryInserted))
             {
                 var poItem = receiptItem.PurchaseOrderItem;
+
                 if (poItem == null)
-                    throw new Exception("Purchase order item not found for goods receipt item.");
+                    throw new Exception("Purchase order item not found.");
 
-                // TODO:
-                // Replace this category resolution logic with a proper mapping in your system.
-                // Example: derive from requisition category, PO metadata, or explicit inventory category on PO item.
-                var inventoryCategory = await _context.InventoryCategories.FirstOrDefaultAsync();
-                if (inventoryCategory == null)
-                    throw new Exception("No inventory category available for inventory insertion.");
+                if (poItem.InventoryCategoryId == null)
+                    throw new Exception($"Inventory category missing for {poItem.ItemName}.");
 
-                for (int i = 0; i < receiptItem.QuantityReceived; i++)
+                var category = await _context.InventoryCategories
+                    .FirstOrDefaultAsync(x => x.Id == poItem.InventoryCategoryId.Value);
+
+                if (category == null)
+                    throw new Exception($"Inventory category not found for {poItem.ItemName}.");
+
+                var stock = await _context.InventoryStocks
+                    .FirstOrDefaultAsync(x =>
+                        x.Name == poItem.ItemName &&
+                        x.CategoryId == category.Id);
+
+                if (stock == null)
                 {
-                    var generated = await _inventoryCodeService.GenerateSkuAndBarcodeAsync(
+                    var generatedStockCode = await _inventoryCodeService.GenerateSkuAndBarcodeAsync(
                         poItem.ItemName,
-                        inventoryCategory.Id);
+                        category.Id);
 
-                    var inventoryItem = new InventoryItem
+                    stock = new InventoryStock
                     {
                         Id = Guid.NewGuid(),
                         Name = poItem.ItemName,
-                        Description = string.Empty,
-                        SerialNumber = null,
-                        SKU = generated.Sku,
-                        Barcode = generated.Barcode,
-                        Status = "Available",
-                        AssignedToId = null,
-                        AssignedDate = DateTime.MinValue,
-                        Location = string.IsNullOrWhiteSpace(receiptItem.Location) ? "Inventory" : receiptItem.Location,
-                        Condition = string.IsNullOrWhiteSpace(receiptItem.Condition) ? "Good" : receiptItem.Condition,
-                        InventoryCategoryId = inventoryCategory.Id,
-                        CreatedById = goodsReceipt.ReceivedById
+                        SKU = generatedStockCode.Sku,
+                        QuantityAvailable = 0,
+                        CategoryId = category.Id,
+                        Unit = string.IsNullOrWhiteSpace(poItem.Unit) ? "pcs" : poItem.Unit,
+                        ReorderLevel = poItem.ReorderLevel <= 0 ? 5 : poItem.ReorderLevel,
+                        CreatedById = goodsReceipt.ReceivedById,
+                        CreatedAt = DateTime.UtcNow
                     };
 
-                    _context.InventoryItems.Add(inventoryItem);
+                    _context.InventoryStocks.Add(stock);
                     await _context.SaveChangesAsync();
+                }
 
-                    // For quantity > 1 this stores the last inserted item ID.
-                    // If you want one-to-many linkage from receipt item to all inserted inventory items,
-                    // introduce a separate linking table later.
-                    receiptItem.InventoryItemId = inventoryItem.Id;
+                stock.QuantityAvailable += receiptItem.QuantityReceived;
+
+                _context.InventoryTransactions.Add(new InventoryTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    StockId = stock.Id,
+                    QuantityChange = receiptItem.QuantityReceived,
+                    Type = InventoryTransactionType.Receive,
+                    ReferenceId = goodsReceipt.Id,
+                    TransactionDate = DateTime.UtcNow,
+                    PerformedById = goodsReceipt.ReceivedById,
+                    Remarks = $"Received from PO {goodsReceipt.PurchaseOrder.PurchaseOrderNumber}"
+                });
+
+                if (category.IsAssetTracked)
+                {
+                    for (int i = 0; i < receiptItem.QuantityReceived; i++)
+                    {
+                        var generated = await _inventoryCodeService.GenerateSkuAndBarcodeAsync(
+                            poItem.ItemName,
+                            category.Id);
+
+                        var condition = InventoryItemCondition.Good;
+
+                        if (!string.IsNullOrWhiteSpace(receiptItem.Condition))
+                        {
+                            Enum.TryParse(receiptItem.Condition, true, out condition);
+                        }
+
+                        var inventoryItem = new InventoryItem
+                        {
+                            Id = Guid.NewGuid(),
+                            StockId = stock.Id,
+                            Name = poItem.ItemName,
+                            Description = string.Empty,
+                            SerialNumber = null,
+                            SKU = generated.Sku,
+                            Barcode = generated.Barcode,
+                            Status = InventoryItemStatus.Available,
+                            Condition = condition,
+                            Location = string.IsNullOrWhiteSpace(receiptItem.Location)
+                                ? "Inventory"
+                                : receiptItem.Location,
+                            InventoryCategoryId = category.Id,
+                            CreatedById = goodsReceipt.ReceivedById,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        _context.InventoryItems.Add(inventoryItem);
+                    }
                 }
 
                 receiptItem.InventoryInserted = true;
                 receiptItem.InventoryInsertedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
             }
 
             goodsReceipt.InventoryProcessingStatus = InventoryProcessingStatus.Complete;
             goodsReceipt.InventoryProcessingError = null;
+
             await _context.SaveChangesAsync();
+            await tx.CommitAsync();
         }
         catch (Exception ex)
         {
+            await tx.RollbackAsync();
+
             goodsReceipt.InventoryProcessingStatus = InventoryProcessingStatus.Failed;
             goodsReceipt.InventoryProcessingError = ex.Message;
+
             await _context.SaveChangesAsync();
             throw;
         }

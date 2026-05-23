@@ -263,4 +263,20 @@ public class PurchaseOrderReceiptService : IPurchaseOrderReceiptService
 
         await _context.SaveChangesAsync();
     }
+    
+    
+    public async Task<bool> ChangeArrivalDate(Guid purchaseOrderId, DateTime newArrivalDate)
+    {
+        var po = await _context.PurchaseOrders
+            .FirstOrDefaultAsync(x => x.Id == purchaseOrderId);
+
+        if (po == null)
+            return false;
+
+        po.DeliveryDate = newArrivalDate;
+
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
 }

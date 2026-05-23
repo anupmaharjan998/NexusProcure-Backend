@@ -1,111 +1,200 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
-using NexusProcure.Core.DTOs;
-using NexusProcure.Core.DTOs.Approval;
+using NexusProcure.Core.DTOs.Delegation;
 using NexusProcure.Core.Entities;
 using NexusProcure.Infrastructure.Data;
-using ApprovalDelegation = NexusProcure.Application.Interfaces.ApprovalDelegation;
 
 namespace NexusProcure.Application.Services;
 
 public class DelegationService : IDelegationService
 {
     private readonly NexusProcureDbContext _context;
+    private readonly IAuditService _auditService;
 
-    public DelegationService(NexusProcureDbContext context)
+    public DelegationService(NexusProcureDbContext context, IAuditService auditService)
     {
         _context = context;
+        _auditService = auditService;
     }
-    
-    public async Task<DelegationResponseDto> CreateAsync(CreateDelegationDto dto)
+
+    public async Task<DelegationDto> CreateAsync(Guid userId, CreateDelegationDto dto)
     {
         if (dto.StartDate >= dto.EndDate)
-            throw new InvalidOperationException("End date must be after start date.");
+            throw new Exception("Invalid date range");
 
-        if (dto.FromUserId == dto.ToUserId)
-            throw new InvalidOperationException("Cannot delegate to the same user.");
+        if (userId == dto.DelegateUserId)
+            throw new Exception("Cannot delegate to self");
 
-        // Prevent overlapping delegations
-        var overlapExists = await _context.ApprovalDelegations.AnyAsync(d =>
-            d.FromUserId == dto.FromUserId &&
-            d.IsActive &&
-            d.EndDate >= dto.StartDate &&
-            d.StartDate <= dto.EndDate);
+        // 🔹 Validate delegator
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == userId);
 
-        if (overlapExists)
-            throw new InvalidOperationException("Overlapping delegation already exists.");
+        if (user == null)
+            throw new Exception("User not found");
 
-        var delegation = new ApprovalDelegation
+        // 🔹 Fetch delegate user (FIXED)
+        var delegateUser = await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == dto.DelegateUserId);
+
+        if (delegateUser == null)
+            throw new Exception("Delegate user not found");
+
+        if (!delegateUser.IsActive)
+            throw new Exception("Cannot delegate to inactive user");
+
+        // Prevent delegating to subordinate (direct)
+        if (delegateUser.ManagerId == userId)
+            throw new Exception("Cannot delegate to direct subordinate");
+
+        // OPTIONAL: Prevent deep hierarchy delegation (recommended)
+        if (await IsSubordinate(userId, delegateUser.Id))
+            throw new Exception("Cannot delegate to subordinate in hierarchy");
+
+        // 🔹 Proper overlap check
+        var overlapping = await _context.UserDelegations
+            .AnyAsync(d =>
+                d.UserId == userId &&
+                d.IsActive &&
+                (
+                    dto.StartDate <= d.EndDate &&
+                    dto.EndDate >= d.StartDate
+                ));
+
+        if (overlapping)
+            throw new Exception("Delegation overlaps with existing active delegation");
+
+        var delegation = new UserDelegation
         {
-            Id = Guid.NewGuid(),
-            FromUserId = dto.FromUserId,
-            ToUserId = dto.ToUserId,
+            UserId = userId,
+            DelegateUserId = dto.DelegateUserId,
             StartDate = dto.StartDate,
-            EndDate = dto.EndDate
+            EndDate = dto.EndDate,
+            IsActive = true,
+            Reason = dto.Reason
         };
 
-        _context.ApprovalDelegations.Add(delegation);
+        _context.UserDelegations.Add(delegation);
         await _context.SaveChangesAsync();
+        
+        await _auditService.LogAsync(
+            "UserDelegation",
+            delegation.Id,
+            "Created",
+            userId,
+            null,
+            new
+            {
+                delegation.UserId,
+                delegation.DelegateUserId,
+                delegation.StartDate,
+                delegation.EndDate,
+                delegation.Reason
+            });
 
-        return new DelegationResponseDto
+        return new DelegationDto
         {
             Id = delegation.Id,
-            FromUserId = delegation.FromUserId,
-            ToUserId = delegation.ToUserId,
+            UserId = userId,
+            DelegateUserId = dto.DelegateUserId,
+            UserName = user.FullName,
+            DelegateUserName = delegateUser.FullName,
             StartDate = delegation.StartDate,
             EndDate = delegation.EndDate,
             IsActive = delegation.IsActive
         };
     }
 
-    public async Task<List<DelegationResponseDto>> GetActiveDelegationsAsync()
+    public async Task<bool> DeactivateAsync(Guid delegationId)
     {
-        var now = DateTime.UtcNow;
-
-        return await _context.ApprovalDelegations
-            .Where(d =>
-                d.IsActive &&
-                d.StartDate <= now &&
-                d.EndDate >= now)
-            .Select(d => new DelegationResponseDto
-            {
-                Id = d.Id,
-                FromUserId = d.FromUserId,
-                ToUserId = d.ToUserId,
-                StartDate = d.StartDate,
-                EndDate = d.EndDate,
-                IsActive = d.IsActive
-            })
-            .ToListAsync();
-    }
-
-    public async Task DeactivateAsync(Guid delegationId)
-    {
-        var delegation = await _context.ApprovalDelegations
-            .FirstOrDefaultAsync(d => d.Id == delegationId);
-
-        if (delegation == null)
-            throw new KeyNotFoundException("Delegation not found.");
+        var delegation = await _context.UserDelegations.FindAsync(delegationId);
+        if (delegation == null) return false;
 
         delegation.IsActive = false;
         await _context.SaveChangesAsync();
+        return true;
     }
 
-    public async Task<ApprovalDelegation?> GetValidDelegationAsync(
-        Guid fromUserId,
-        Guid toUserId,
-        Guid? categoryId,
-        Guid? approvalLevelId)
+    public async Task<User?> GetActiveDelegateAsync(Guid userId)
     {
         var now = DateTime.UtcNow;
 
-        return await _context.ApprovalDelegations
-            .Where(d =>
-                d.FromUserId == fromUserId &&
-                d.ToUserId == toUserId &&
+        var delegation = await _context.UserDelegations
+            .Include(d => d.DelegateUser)
+            .FirstOrDefaultAsync(d =>
+                d.UserId == userId &&
                 d.IsActive &&
                 d.StartDate <= now &&
-                d.EndDate >= now)
-            .FirstOrDefaultAsync();
+                d.EndDate >= now);
+
+        if (delegation == null)
+            return null;
+
+        var oldValues = new
+        {
+            delegation.IsActive
+        };
+
+        delegation.IsActive = false;
+
+        await _context.SaveChangesAsync();
+
+        await _auditService.LogAsync(
+            "UserDelegation",
+            delegation.Id,
+            "Deactivated",
+            userId,
+            oldValues,
+            new
+            {
+                delegation.IsActive
+            });
+
+        return delegation.DelegateUser;
+    }
+    
+    
+    public async Task ExpireDelegationsAsync()
+    {
+        var now = DateTime.UtcNow;
+
+        var expiredDelegations = await _context.UserDelegations
+            .Where(d => d.IsActive && d.EndDate < now)
+            .ToListAsync();
+
+        if (!expiredDelegations.Any())
+            return;
+
+        foreach (var delegation in expiredDelegations)
+        {
+            var oldValues = new { delegation.IsActive };
+
+            delegation.IsActive = false;
+
+            await _auditService.LogAsync(
+                "UserDelegation",
+                delegation.Id,
+                "Expired",
+                null, // system action
+                oldValues,
+                new { delegation.IsActive });
+        }
+
+        await _context.SaveChangesAsync();
+    }
+    
+
+    private async Task<bool> IsSubordinate(Guid managerId, Guid targetUserId)
+    {
+        var current = await _context.Users.FindAsync(targetUserId);
+
+        while (current?.ManagerId != null)
+        {
+            if (current.ManagerId == managerId)
+                return true;
+
+            current = await _context.Users.FindAsync(current.ManagerId);
+        }
+
+        return false;
     }
 }

@@ -18,7 +18,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => src.Role.Id))
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
             .ForMember(dest => dest.DepartmentId, opt => opt.MapFrom(src => src.Department != null ? src.Department.Id : (Guid?)null))
-            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department != null ? src.Department.DepartmentName : null));
+            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department != null ? src.Department.DepartmentName : null))
+            .ForMember(dest => dest.ManagerId, opt => opt.MapFrom(src => src.Manager.Id))
+            .ForMember(dest => dest.ManagerName, opt => opt.MapFrom(src => src.Manager.FullName));
 
         CreateMap<CreateUserDto, User>()
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // handled manually

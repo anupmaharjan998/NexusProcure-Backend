@@ -304,19 +304,29 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Details")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EntityName")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("PerformedById")
+                    b.Property<string>("NewValues")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("PerformedBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PerformedById");
 
                     b.ToTable("AuditLogs");
                 });
@@ -462,8 +472,9 @@ namespace NexusProcure.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("AssignedById")
-                        .HasColumnType("uuid");
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("AssignedDate")
                         .HasColumnType("timestamp with time zone");
@@ -477,7 +488,7 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("UnassignedById")
+                    b.Property<Guid>("PerformedById")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UnassignedDate")
@@ -485,13 +496,11 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssignedById");
-
                     b.HasIndex("AssignedToId");
 
                     b.HasIndex("InventoryItemId");
 
-                    b.HasIndex("UnassignedById");
+                    b.HasIndex("PerformedById");
 
                     b.ToTable("InventoryAssignmentHistories");
                 });
@@ -514,6 +523,9 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsAssetTracked")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -547,7 +559,7 @@ namespace NexusProcure.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("AssignedDate")
+                    b.Property<DateTime?>("AssignedDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("AssignedToId")
@@ -557,9 +569,8 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Condition")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Condition")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -589,9 +600,11 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<string>("SerialNumber")
                         .HasColumnType("text");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("StockId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -604,56 +617,253 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasIndex("SKU")
                         .IsUnique();
 
+                    b.HasIndex("StockId");
+
                     b.ToTable("InventoryItems");
                 });
 
-            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.Stock", b =>
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("AvailableQuantity")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("InventoryItemId")
+                    b.Property<Guid?>("ApprovedByManagerId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("ReservedQuantity")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ProcessedByInventoryManagerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InventoryItemId");
+                    b.HasIndex("ApprovedByManagerId");
 
-                    b.ToTable("Stocks");
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("ProcessedByInventoryManagerId");
+
+                    b.HasIndex("RequestedById");
+
+                    b.ToTable("InventoryRequests");
                 });
 
-            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.StockTransaction", b =>
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequestIssuedItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("Date")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("InventoryItemId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Quantity")
+                    b.Property<Guid>("InventoryRequestItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("InventoryRequestItemId");
+
+                    b.ToTable("InventoryRequestIssuedItems");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequestItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InventoryRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityIssued")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Reference")
+                    b.Property<int>("QuantityRequested")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("StockId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryRequestId");
+
+                    b.HasIndex("StockId");
+
+                    b.ToTable("InventoryRequestItems");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryStock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("QuantityAvailable")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ReorderLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("Name", "CategoryId")
+                        .IsUnique();
+
+                    b.ToTable("InventoryStocks");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PerformedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("QuantityChange")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ReferenceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("StockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.ToTable("StockTransactions");
+                    b.HasIndex("PerformedById");
+
+                    b.HasIndex("StockId");
+
+                    b.ToTable("InventoryTransactions");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.ProcurementRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsAutoGenerated")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RequestedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SourceInventoryRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("RequestedById");
+
+                    b.ToTable("ProcurementRequests");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.ProcurementRequestItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProcurementRequestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcurementRequestId");
+
+                    b.ToTable("ProcurementRequestItems");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.InventoryItem", b =>
@@ -1112,8 +1322,15 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<int>("ReorderLevel")
+                        .HasColumnType("integer");
+
                     b.Property<decimal>("TaxPercentage")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("numeric");
@@ -1773,6 +1990,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("ManagerId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1806,6 +2026,8 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasIndex("DepartmentId");
 
+                    b.HasIndex("ManagerId");
+
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users");
@@ -1837,6 +2059,42 @@ namespace NexusProcure.Infrastructure.Migrations
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             Username = "admin"
                         });
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.UserDelegation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DelegateUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DelegateUserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserDelegations");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
@@ -2025,17 +2283,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Navigation("InventoryItem");
                 });
 
-            modelBuilder.Entity("NexusProcure.Core.Entities.AuditLog", b =>
-                {
-                    b.HasOne("NexusProcure.Core.Entities.User", "PerformedBy")
-                        .WithMany()
-                        .HasForeignKey("PerformedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("PerformedBy");
-                });
-
             modelBuilder.Entity("NexusProcure.Core.Entities.Department", b =>
                 {
                     b.HasOne("NexusProcure.Core.Entities.User", "Head")
@@ -2104,12 +2351,6 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryAssignmentHistory", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.User", "AssignedBy")
-                        .WithMany()
-                        .HasForeignKey("AssignedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("NexusProcure.Core.Entities.User", "AssignedTo")
                         .WithMany()
                         .HasForeignKey("AssignedToId")
@@ -2122,18 +2363,17 @@ namespace NexusProcure.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("NexusProcure.Core.Entities.User", "UnassignedBy")
+                    b.HasOne("NexusProcure.Core.Entities.User", "PerformedBy")
                         .WithMany()
-                        .HasForeignKey("UnassignedById")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("AssignedBy");
+                        .HasForeignKey("PerformedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("AssignedTo");
 
                     b.Navigation("InventoryItem");
 
-                    b.Navigation("UnassignedBy");
+                    b.Navigation("PerformedBy");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryCategory", b =>
@@ -2163,22 +2403,152 @@ namespace NexusProcure.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryStock", "Stock")
+                        .WithMany("Items")
+                        .HasForeignKey("StockId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("AssignedTo");
 
                     b.Navigation("CreatedBy");
 
                     b.Navigation("InventoryCategory");
+
+                    b.Navigation("Stock");
                 });
 
-            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.Stock", b =>
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequest", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.User", "ApprovedByManager")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByManagerId");
+
+                    b.HasOne("NexusProcure.Core.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "ProcessedByInventoryManager")
+                        .WithMany()
+                        .HasForeignKey("ProcessedByInventoryManagerId");
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApprovedByManager");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("ProcessedByInventoryManager");
+
+                    b.Navigation("RequestedBy");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequestIssuedItem", b =>
                 {
                     b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryItem", "InventoryItem")
                         .WithMany()
                         .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryRequestItem", "InventoryRequestItem")
+                        .WithMany("IssuedItems")
+                        .HasForeignKey("InventoryRequestItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("InventoryItem");
+
+                    b.Navigation("InventoryRequestItem");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequestItem", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryRequest", "InventoryRequest")
+                        .WithMany("Items")
+                        .HasForeignKey("InventoryRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryStock", "Stock")
+                        .WithMany()
+                        .HasForeignKey("StockId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryRequest");
+
+                    b.Navigation("Stock");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryStock", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
+                        .WithMany("Stocks")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryTransaction", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.User", "PerformedBy")
+                        .WithMany()
+                        .HasForeignKey("PerformedById");
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryStock", "Stock")
+                        .WithMany("Transactions")
+                        .HasForeignKey("StockId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PerformedBy");
+
+                    b.Navigation("Stock");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.ProcurementRequest", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "RequestedBy")
+                        .WithMany()
+                        .HasForeignKey("RequestedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Department");
+
+                    b.Navigation("RequestedBy");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.ProcurementRequestItem", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.ProcurementRequest", "ProcurementRequest")
+                        .WithMany("Items")
+                        .HasForeignKey("ProcurementRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProcurementRequest");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.PurchaseOrder", b =>
@@ -2375,6 +2745,11 @@ namespace NexusProcure.Infrastructure.Migrations
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("NexusProcure.Core.Entities.User", "Manager")
+                        .WithMany("Subordinates")
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("NexusProcure.Core.Entities.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
@@ -2383,7 +2758,28 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Navigation("Department");
 
+                    b.Navigation("Manager");
+
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.UserDelegation", b =>
+                {
+                    b.HasOne("NexusProcure.Core.Entities.User", "DelegateUser")
+                        .WithMany()
+                        .HasForeignKey("DelegateUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.User", "User")
+                        .WithMany("Delegations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("DelegateUser");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>
@@ -2439,6 +2835,8 @@ namespace NexusProcure.Infrastructure.Migrations
                 {
                     b.Navigation("Items");
 
+                    b.Navigation("Stocks");
+
                     b.Navigation("SubCategories");
 
                     b.Navigation("VendorCategories");
@@ -2449,6 +2847,28 @@ namespace NexusProcure.Infrastructure.Migrations
             modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryItem", b =>
                 {
                     b.Navigation("AssignmentHistories");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequest", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryRequestItem", b =>
+                {
+                    b.Navigation("IssuedItems");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryStock", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.ProcurementRequest", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.InventoryItem", b =>
@@ -2498,7 +2918,11 @@ namespace NexusProcure.Infrastructure.Migrations
                 {
                     b.Navigation("AssetAssignments");
 
+                    b.Navigation("Delegations");
+
                     b.Navigation("Requisitions");
+
+                    b.Navigation("Subordinates");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Vendor", b =>

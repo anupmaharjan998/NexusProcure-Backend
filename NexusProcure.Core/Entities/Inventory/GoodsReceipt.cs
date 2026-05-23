@@ -1,4 +1,6 @@
-﻿using NexusProcure.Core.Enums;
+﻿using System;
+using System.Collections.Generic;
+using NexusProcure.Core.Enums;
 
 namespace NexusProcure.Core.Entities.Inventory;
 
