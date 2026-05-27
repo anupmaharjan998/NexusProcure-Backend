@@ -8,7 +8,7 @@ using NexusProcure.Core.DTOs.Email;
 
 namespace NexusProcure.Application.Services;
 
-public class SmtpEmailService : IEmailService
+public class SmtpEmailService 
 {
     private readonly IConfiguration _configuration;
     private readonly EmailSettings _settings;

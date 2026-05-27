@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260527104156_ProcurementRequestUpdate")]
+    partial class ProcurementRequestUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -865,43 +868,28 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("InventoryRequestId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("RejectionReason")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Remarks")
+                    b.Property<string>("ManagerRemarks")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<Guid>("RequestedById")
+                    b.Property<Guid>("RequestedByUserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("RequisitionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
+                    b.Property<string>("Status")
+                        .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ApprovedByManagerId");
 
-                    b.HasIndex("DepartmentId");
-
                     b.HasIndex("InventoryRequestId");
 
-                    b.HasIndex("RequestedById");
-
-                    b.HasIndex("RequisitionId");
+                    b.HasIndex("RequestedByUserId");
 
                     b.ToTable("ProcurementRequests");
                 });
@@ -914,9 +902,6 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<int>("AvailableQuantity")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("InventoryRequestItemId")
                         .HasColumnType("uuid");
@@ -1903,9 +1888,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<Guid?>("DepartmentId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("DepartmentId1")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("IsUrgent")
                         .HasColumnType("boolean");
 
@@ -1954,8 +1936,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("DepartmentId1");
 
                     b.HasIndex("RequestedById");
 
@@ -3072,37 +3052,23 @@ namespace NexusProcure.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("NexusProcure.Core.Entities.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryRequest", "InventoryRequest")
                         .WithMany()
                         .HasForeignKey("InventoryRequestId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("NexusProcure.Core.Entities.User", "RequestedBy")
+                    b.HasOne("NexusProcure.Core.Entities.User", "RequestedByUser")
                         .WithMany()
-                        .HasForeignKey("RequestedById")
+                        .HasForeignKey("RequestedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("NexusProcure.Core.Entities.Requisition", "Requisition")
-                        .WithMany()
-                        .HasForeignKey("RequisitionId");
-
                     b.Navigation("ApprovedByManager");
-
-                    b.Navigation("Department");
 
                     b.Navigation("InventoryRequest");
 
-                    b.Navigation("RequestedBy");
-
-                    b.Navigation("Requisition");
+                    b.Navigation("RequestedByUser");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.ProcurementRequestItem", b =>
@@ -3274,14 +3240,9 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Requisition", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("NexusProcure.Core.Entities.Department", null)
                         .WithMany("Requisitions")
-                        .HasForeignKey("DepartmentId1");
+                        .HasForeignKey("DepartmentId");
 
                     b.HasOne("NexusProcure.Core.Entities.User", "RequestedBy")
                         .WithMany()
@@ -3292,8 +3253,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasOne("NexusProcure.Core.Entities.User", null)
                         .WithMany("Requisitions")
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Department");
 
                     b.Navigation("RequestedBy");
                 });

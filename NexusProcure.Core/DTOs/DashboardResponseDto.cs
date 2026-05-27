@@ -2,12 +2,12 @@
 
 namespace NexusProcure.Core.DTOs;
 
-public class DashboardResponseDto
-{
-    public DashboardStatsDto Stats { get; set; }
-    public List<RecentPurchaseOrderDto> RecentPOs { get; set; }
-    public List<DeliveryDto> Deliveries { get; set; }
-}
+// public class DashboardResponseDto
+// {
+//     public DashboardStatsDto Stats { get; set; }
+//     public List<RecentPurchaseOrderDto> RecentPOs { get; set; }
+//     public List<DeliveryDto> Deliveries { get; set; }
+// }
 
 public class RecentPurchaseOrderDto
 {
@@ -47,4 +47,6 @@ public class DeliveryDto
     
     [Column("total_items")]
     public int TotalItems { get; set; }
+
+    public DateTime? ExpectedDeliveryDate { get; set; }
 }

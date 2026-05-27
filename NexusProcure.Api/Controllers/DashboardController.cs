@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 
@@ -17,7 +18,8 @@ public class DashboardController : BaseApiController
     [Authorize]
     public async Task<IActionResult> GetStats()
     {
-        var stats = await _dashboardService.GetDashboardAsync();
+        var userId = Guid.Parse(User.FindFirstValue("userId") ?? throw new Exception("user id missing"));
+        var stats = await _dashboardService.GetDashboardAsync(userId);
         return Ok(stats);
     }
 }

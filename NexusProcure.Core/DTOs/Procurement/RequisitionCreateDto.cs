@@ -11,6 +11,7 @@ public class RequisitionCreateDto
     public DateTime? RequiredDate { get; set; }
 
     public string? Notes { get; set; }
+    public Guid DepartmentId { get; set; }
 
     public List<RequisitionItemCreateDto> Items { get; set; } = new();
 }

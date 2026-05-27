@@ -29,6 +29,9 @@ public class Requisition
 
     public decimal TotalAmount { get; set; }
 
+    public Guid? DepartmentId { get; set; }
+
+    public Department? Department { get; set; } = null!;
     public ICollection<RequisitionItem> Items { get; set; } = new List<RequisitionItem>();
 
     public ICollection<Approval> Approvals { get; set; } = new List<Approval>();
