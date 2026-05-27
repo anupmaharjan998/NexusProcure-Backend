@@ -9,108 +9,128 @@ namespace NexusProcure.Application.Services;
 public class DelegationService : IDelegationService
 {
     private readonly NexusProcureDbContext _context;
-    private readonly IAuditService _auditService;
 
-    public DelegationService(NexusProcureDbContext context, IAuditService auditService)
+    private const string ManageDelegationPermission = "MANAGE_DELEGATION";
+    private const string DelegationPermission = "DELEGATION";
+
+    public DelegationService(NexusProcureDbContext context)
     {
         _context = context;
-        _auditService = auditService;
     }
 
-    public async Task<DelegationDto> CreateAsync(Guid userId, CreateDelegationDto dto)
+    public async Task<DelegationDto> CreateAsync(string currentUserClaim, CreateDelegationDto dto)
     {
-        if (dto.StartDate >= dto.EndDate)
-            throw new Exception("Invalid date range");
+        var currentUser = await GetCurrentUserAsync(currentUserClaim);
 
-        if (userId == dto.DelegateUserId)
-            throw new Exception("Cannot delegate to self");
+        var canManageAll = HasPermission(currentUser, ManageDelegationPermission);
+        var canCreateOwn = HasPermission(currentUser, DelegationPermission);
 
-        // 🔹 Validate delegator
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null)
-            throw new Exception("User not found");
-
-        // 🔹 Fetch delegate user (FIXED)
-        var delegateUser = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == dto.DelegateUserId);
-
-        if (delegateUser == null)
-            throw new Exception("Delegate user not found");
-
-        if (!delegateUser.IsActive)
-            throw new Exception("Cannot delegate to inactive user");
-
-        // Prevent delegating to subordinate (direct)
-        if (delegateUser.ManagerId == userId)
-            throw new Exception("Cannot delegate to direct subordinate");
-
-        // OPTIONAL: Prevent deep hierarchy delegation (recommended)
-        if (await IsSubordinate(userId, delegateUser.Id))
-            throw new Exception("Cannot delegate to subordinate in hierarchy");
-
-        // 🔹 Proper overlap check
-        var overlapping = await _context.UserDelegations
-            .AnyAsync(d =>
-                d.UserId == userId &&
-                d.IsActive &&
-                (
-                    dto.StartDate <= d.EndDate &&
-                    dto.EndDate >= d.StartDate
-                ));
-
-        if (overlapping)
-            throw new Exception("Delegation overlaps with existing active delegation");
-
-        var delegation = new UserDelegation
+        if (!canManageAll && !canCreateOwn)
         {
-            UserId = userId,
-            DelegateUserId = dto.DelegateUserId,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
-            IsActive = true,
-            Reason = dto.Reason
-        };
+            throw new UnauthorizedAccessException("You do not have permission to create delegation.");
+        }
 
-        _context.UserDelegations.Add(delegation);
-        await _context.SaveChangesAsync();
-        
-        await _auditService.LogAsync(
-            "UserDelegation",
-            delegation.Id,
-            "Created",
-            userId,
-            null,
-            new
+        Guid delegatorUserId;
+
+        if (canManageAll)
+        {
+            if (!dto.UserId.HasValue || dto.UserId.Value == Guid.Empty)
             {
-                delegation.UserId,
-                delegation.DelegateUserId,
-                delegation.StartDate,
-                delegation.EndDate,
-                delegation.Reason
-            });
+                throw new InvalidOperationException("Delegator user is required.");
+            }
 
-        return new DelegationDto
+            delegatorUserId = dto.UserId.Value;
+        }
+        else
         {
-            Id = delegation.Id,
-            UserId = userId,
-            DelegateUserId = dto.DelegateUserId,
-            UserName = user.FullName,
-            DelegateUserName = delegateUser.FullName,
-            StartDate = delegation.StartDate,
-            EndDate = delegation.EndDate,
-            IsActive = delegation.IsActive
+            if (dto.UserId.HasValue && dto.UserId.Value != currentUser.Id)
+            {
+                throw new UnauthorizedAccessException("You can only create delegation for yourself.");
+            }
+
+            delegatorUserId = currentUser.Id;
+        }
+
+        return await CreateDelegationInternalAsync(delegatorUserId, dto);
+    }
+
+    public async Task<List<DelegationDto>> GetVisibleDelegationsAsync(string currentUserClaim)
+    {
+        var currentUser = await GetCurrentUserAsync(currentUserClaim);
+
+        var canManageAll = HasPermission(currentUser, ManageDelegationPermission);
+        var canCreateOwn = HasPermission(currentUser, DelegationPermission);
+
+        if (!canManageAll && !canCreateOwn)
+        {
+            throw new UnauthorizedAccessException("You do not have permission to view delegations.");
+        }
+
+        if (canManageAll)
+        {
+            return await GetAllAsync();
+        }
+
+        return await GetByUserAsync(currentUser.Id);
+    }
+
+    public async Task<List<DelegationDto>> GetMyDelegationsAsync(string currentUserClaim)
+    {
+        var currentUser = await GetCurrentUserAsync(currentUserClaim);
+
+        var canManageAll = HasPermission(currentUser, ManageDelegationPermission);
+        var canCreateOwn = HasPermission(currentUser, DelegationPermission);
+
+        if (!canManageAll && !canCreateOwn)
+        {
+            throw new UnauthorizedAccessException("You do not have permission to view delegations.");
+        }
+
+        return await GetByUserAsync(currentUser.Id);
+    }
+
+    public async Task<DelegationPermissionsDto> GetPermissionsAsync(string currentUserClaim)
+    {
+        var currentUser = await GetCurrentUserAsync(currentUserClaim);
+
+        var canManageAll = HasPermission(currentUser, ManageDelegationPermission);
+        var canCreateOwn = HasPermission(currentUser, DelegationPermission);
+
+        return new DelegationPermissionsDto
+        {
+            CanManageAll = canManageAll,
+            CanCreateOwn = canManageAll || canCreateOwn
         };
     }
 
-    public async Task<bool> DeactivateAsync(Guid delegationId)
+    public async Task<bool> DeactivateAsync(string currentUserClaim, Guid delegationId)
     {
-        var delegation = await _context.UserDelegations.FindAsync(delegationId);
-        if (delegation == null) return false;
+        var currentUser = await GetCurrentUserAsync(currentUserClaim);
+
+        var canManageAll = HasPermission(currentUser, ManageDelegationPermission);
+        var canCreateOwn = HasPermission(currentUser, DelegationPermission);
+
+        if (!canManageAll && !canCreateOwn)
+        {
+            throw new UnauthorizedAccessException("You do not have permission to revoke delegation.");
+        }
+
+        var delegation = await _context.UserDelegations
+            .FirstOrDefaultAsync(x => x.Id == delegationId);
+
+        if (delegation == null)
+        {
+            return false;
+        }
+
+        if (!canManageAll && delegation.UserId != currentUser.Id)
+        {
+            return false;
+        }
 
         delegation.IsActive = false;
         await _context.SaveChangesAsync();
+
         return true;
     }
 
@@ -119,82 +139,221 @@ public class DelegationService : IDelegationService
         var now = DateTime.UtcNow;
 
         var delegation = await _context.UserDelegations
-            .Include(d => d.DelegateUser)
-            .FirstOrDefaultAsync(d =>
-                d.UserId == userId &&
-                d.IsActive &&
-                d.StartDate <= now &&
-                d.EndDate >= now);
+            .Include(x => x.DelegateUser)
+            .Where(x =>
+                x.UserId == userId &&
+                x.IsActive &&
+                x.StartDate <= now &&
+                x.EndDate >= now)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync();
 
-        if (delegation == null)
-            return null;
-
-        var oldValues = new
-        {
-            delegation.IsActive
-        };
-
-        delegation.IsActive = false;
-
-        await _context.SaveChangesAsync();
-
-        await _auditService.LogAsync(
-            "UserDelegation",
-            delegation.Id,
-            "Deactivated",
-            userId,
-            oldValues,
-            new
-            {
-                delegation.IsActive
-            });
-
-        return delegation.DelegateUser;
+        return delegation?.DelegateUser;
     }
-    
-    
+
     public async Task ExpireDelegationsAsync()
     {
         var now = DateTime.UtcNow;
 
         var expiredDelegations = await _context.UserDelegations
-            .Where(d => d.IsActive && d.EndDate < now)
+            .Where(x => x.IsActive && x.EndDate < now)
             .ToListAsync();
-
-        if (!expiredDelegations.Any())
-            return;
 
         foreach (var delegation in expiredDelegations)
         {
-            var oldValues = new { delegation.IsActive };
-
             delegation.IsActive = false;
-
-            await _auditService.LogAsync(
-                "UserDelegation",
-                delegation.Id,
-                "Expired",
-                null, // system action
-                oldValues,
-                new { delegation.IsActive });
         }
 
         await _context.SaveChangesAsync();
     }
-    
 
-    private async Task<bool> IsSubordinate(Guid managerId, Guid targetUserId)
+    private async Task<DelegationDto> CreateDelegationInternalAsync(Guid delegatorUserId, CreateDelegationDto dto)
     {
-        var current = await _context.Users.FindAsync(targetUserId);
-
-        while (current?.ManagerId != null)
+        if (delegatorUserId == Guid.Empty)
         {
-            if (current.ManagerId == managerId)
-                return true;
-
-            current = await _context.Users.FindAsync(current.ManagerId);
+            throw new InvalidOperationException("Delegator user is required.");
         }
 
-        return false;
+        if (dto.DelegateUserId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Delegate user is required.");
+        }
+
+        if (dto.DelegateUserId == delegatorUserId)
+        {
+            throw new InvalidOperationException("A user cannot delegate to themselves.");
+        }
+
+        var startDate = DateTime.SpecifyKind(dto.StartDate, DateTimeKind.Utc);
+        var endDate = DateTime.SpecifyKind(dto.EndDate, DateTimeKind.Utc);
+
+        if (startDate >= endDate)
+        {
+            throw new InvalidOperationException("End date must be after start date.");
+        }
+
+        var delegatorExists = await _context.Users.AnyAsync(x => x.Id == delegatorUserId);
+        if (!delegatorExists)
+        {
+            throw new InvalidOperationException("Delegator user not found.");
+        }
+
+        var delegateExists = await _context.Users.AnyAsync(x => x.Id == dto.DelegateUserId);
+        if (!delegateExists)
+        {
+            throw new InvalidOperationException("Delegate user not found.");
+        }
+
+        var hasOverlappingActiveDelegation = await _context.UserDelegations.AnyAsync(x =>
+            x.UserId == delegatorUserId &&
+            x.IsActive &&
+            x.EndDate >= startDate &&
+            x.StartDate <= endDate);
+
+        if (hasOverlappingActiveDelegation)
+        {
+            throw new InvalidOperationException(
+                "An active delegation already exists for this user in the selected date range.");
+        }
+
+        var delegation = new UserDelegation
+        {
+            Id = Guid.NewGuid(),
+            UserId = delegatorUserId,
+            DelegateUserId = dto.DelegateUserId,
+            StartDate = startDate,
+            EndDate = endDate,
+            Scope = string.IsNullOrWhiteSpace(dto.Scope) ? "All" : dto.Scope.Trim(),
+            Reason = dto.Reason?.Trim(),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.UserDelegations.Add(delegation);
+        await _context.SaveChangesAsync();
+
+        return await GetByIdAsync(delegation.Id);
+    }
+
+    private async Task<List<DelegationDto>> GetByUserAsync(Guid userId)
+    {
+        return await BaseDelegationQuery()
+            .Where(x => x.UserId == userId || x.DelegateUserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => MapToDto(x))
+            .ToListAsync();
+    }
+
+    private async Task<List<DelegationDto>> GetAllAsync()
+    {
+        return await BaseDelegationQuery()
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => MapToDto(x))
+            .ToListAsync();
+    }
+
+    private async Task<DelegationDto> GetByIdAsync(Guid id)
+    {
+        var delegation = await BaseDelegationQuery()
+            .Where(x => x.Id == id)
+            .Select(x => MapToDto(x))
+            .FirstOrDefaultAsync();
+
+        if (delegation == null)
+        {
+            throw new InvalidOperationException("Delegation not found.");
+        }
+
+        return delegation;
+    }
+
+    private IQueryable<UserDelegation> BaseDelegationQuery()
+    {
+        return _context.UserDelegations
+            .Include(x => x.User)
+            .Include(x => x.DelegateUser)
+            .AsNoTracking();
+    }
+
+    private static DelegationDto MapToDto(UserDelegation x)
+    {
+        return new DelegationDto
+        {
+            Id = x.Id,
+
+            DelegatorUserId = x.UserId,
+            DelegatorName = x.User.FullName,
+            DelegatorEmail = x.User.Email,
+
+            DelegateUserId = x.DelegateUserId,
+            DelegateName = x.DelegateUser.FullName,
+            DelegateEmail = x.DelegateUser.Email,
+
+            StartDate = x.StartDate,
+            EndDate = x.EndDate,
+            Scope = x.Scope,
+            Reason = x.Reason,
+
+            IsActive = x.IsActive,
+            IsExpired = x.EndDate < DateTime.UtcNow,
+
+            Status = !x.IsActive
+                ? "Revoked"
+                : x.EndDate < DateTime.UtcNow
+                    ? "Expired"
+                    : x.StartDate > DateTime.UtcNow
+                        ? "Scheduled"
+                        : "Active",
+
+            CreatedAt = x.CreatedAt
+        };
+    }
+
+    private async Task<User> GetCurrentUserAsync(string claimValue)
+    {
+        if (string.IsNullOrWhiteSpace(claimValue))
+        {
+            throw new UnauthorizedAccessException("User claim was not found.");
+        }
+
+        User? user;
+
+        if (Guid.TryParse(claimValue, out var userId))
+        {
+            user = await UserWithPermissionsQuery()
+                .FirstOrDefaultAsync(u => u.Id == userId);
+        }
+        else
+        {
+            var normalizedClaim = claimValue.Trim().ToLower();
+
+            user = await UserWithPermissionsQuery()
+                .FirstOrDefaultAsync(u =>
+                    u.Email != null &&
+                    u.Email.ToLower() == normalizedClaim);
+        }
+
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("Logged-in user was not found in database.");
+        }
+
+        return user;
+    }
+
+    private IQueryable<User> UserWithPermissionsQuery()
+    {
+        return _context.Users
+            .Include(u => u.Role)
+                .ThenInclude(r => r.RolePermissions)
+                    .ThenInclude(rp => rp.Permission);
+    }
+
+    private static bool HasPermission(User user, string permissionKey)
+    {
+        return user.Role?.RolePermissions != null &&
+               user.Role.RolePermissions.Any(rp =>
+                   rp.Permission != null &&
+                   rp.Permission.Key == permissionKey);
     }
 }

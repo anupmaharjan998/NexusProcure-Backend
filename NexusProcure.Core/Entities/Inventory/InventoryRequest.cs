@@ -27,5 +27,7 @@ public class InventoryRequest : BaseEntity
 
     public string? Remarks { get; set; }
 
+    public DateTime UpdatedAt { get; set; }
+
     public ICollection<InventoryRequestItem> Items { get; set; } = new List<InventoryRequestItem>();
 }

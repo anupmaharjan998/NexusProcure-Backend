@@ -110,37 +110,43 @@ public class PurchaseOrderService : IPurchaseOrderService
         {
             var rfq = await _context.RequestForQuotations
                 .Include(r => r.Vendors)
-                .ThenInclude(v => v.Vendor)
+                    .ThenInclude(v => v.Vendor)
                 .Include(r => r.Quotations)
-                .ThenInclude(q => q.Items)
-                .FirstOrDefaultAsync(x => x.Id == referenceId);
+                    .ThenInclude(q => q.Items)
+                .FirstOrDefaultAsync(x => x.RequisitionId == referenceId);
 
             if (rfq == null)
-                throw new KeyNotFoundException("Requisition not found");
-            
+                throw new KeyNotFoundException("RFQ not found");
+
             var existingPo = await _context.PurchaseOrders
                 .Include(x => x.Items)
-                .FirstOrDefaultAsync(r => r.RequisitionId == rfq.Id);
+                .FirstOrDefaultAsync(r => r.RequisitionId == rfq.RequisitionId);
 
             if (existingPo != null)
-            {
                 return existingPo;
-            }
 
             if (rfq.Status != RfqStatus.Awarded)
-                throw new InvalidOperationException("Purchase orders can only be created from awarded requisitions");
+                throw new InvalidOperationException("Purchase orders can only be created from awarded RFQs");
 
             var quotation = rfq.Quotations.FirstOrDefault(x => x.IsSelected);
-            var vendorId = rfq.Vendors.FirstOrDefault(x => x.Id == quotation.RfqVendorId);
+
             if (quotation == null)
                 throw new InvalidOperationException("No selected quotation found");
+
+            var rfqVendor = rfq.Vendors.FirstOrDefault(x => x.Id == quotation.RfqVendorId);
+
+            if (rfqVendor == null)
+                throw new InvalidOperationException("Selected quotation vendor not found");
+
+            if (rfqVendor.Vendor == null)
+                throw new InvalidOperationException("Vendor details not found");
 
             var po = new PurchaseOrder
             {
                 Id = Guid.NewGuid(),
                 PurchaseOrderNumber = await _purchaseOrderNumberGenerator.GeneratePoNumberAsync(),
                 RequisitionId = rfq.RequisitionId,
-                VendorId = vendorId.Vendor.Id,
+                VendorId = rfqVendor.Vendor.Id,
                 OrderDate = DateTime.UtcNow,
                 Status = PurchaseOrderStatus.Issued,
                 QuotationId = quotation.Id,
@@ -151,9 +157,12 @@ public class PurchaseOrderService : IPurchaseOrderService
                 {
                     Id = Guid.NewGuid(),
                     ItemName = i.ItemName,
+
+                    InventoryCategoryId = i.InventoryCategoryId,
+
                     TaxPercentage = i.TaxPercentage,
                     Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice
+                    UnitPrice = i.UnitPrice,
                 }).ToList()
             };
 

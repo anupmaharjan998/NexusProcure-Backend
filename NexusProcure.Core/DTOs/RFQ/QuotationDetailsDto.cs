@@ -11,7 +11,9 @@ public class QuotationDetailsDto
     public DateTime SubmittedAt { get; set; }
     public DateTime DeliveryDate { get; set; }
     public decimal TotalAmount { get; set; }
-    public List<QuotationItemsDto> Items { get; set; } = new();
+    public string Notes { get; set; } = null!;
+    public bool IsSelected { get; set; }
+    public List<QuotationItemDto> Items { get; set; } = new();
     public string Status { get; set; } = null!;
 }
 

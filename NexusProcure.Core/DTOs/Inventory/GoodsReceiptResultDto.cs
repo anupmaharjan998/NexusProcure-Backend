@@ -7,5 +7,6 @@ public class GoodsReceiptResultDto
     public string PurchaseOrderNumber { get; set; } = string.Empty;
     public string DeliveryStatus { get; set; } = string.Empty;
     public string InventoryProcessingStatus { get; set; } = string.Empty;
+    public DateTime? NextExpectedDeliveryDate { get; set; }
     public string Message { get; set; } = string.Empty;
 }

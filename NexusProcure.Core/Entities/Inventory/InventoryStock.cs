@@ -21,6 +21,8 @@ public class InventoryStock : BaseEntity
 
     public Guid? CreatedById { get; set; }
     public User? CreatedBy { get; set; }
+    
+    public DateTime UpdatedAt { get; set; }
 
     public ICollection<InventoryItem> Items { get; set; } = new List<InventoryItem>();
     public ICollection<InventoryTransaction> Transactions { get; set; } = new List<InventoryTransaction>();

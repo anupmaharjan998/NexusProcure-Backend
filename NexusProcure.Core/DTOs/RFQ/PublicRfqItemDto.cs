@@ -2,7 +2,7 @@
 
 public class PublicRfqItemDto
 {
-    public Guid ItemId { get; set; }
+    public Guid RfqItemId { get; set; }
     public string ItemName { get; set; } = default!;
     public int Quantity { get; set; }
 }

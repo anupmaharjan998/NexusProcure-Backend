@@ -2,7 +2,7 @@
 
 namespace NexusProcure.Core.Entities.Inventory;
 
-public class InventoryAssignmentHistory
+public class InventoryAssignmentHistory : BaseEntity
 {
     public Guid Id { get; set; }
 

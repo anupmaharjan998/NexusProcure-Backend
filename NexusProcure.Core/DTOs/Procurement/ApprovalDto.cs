@@ -7,8 +7,11 @@ public class ApprovalDto
     public Guid Id { get; set; }
     public Guid RequisitionId { get; set; }
 
-    public Guid ApprovedById { get; set; }
+    public Guid? ApprovedById { get; set; }
     public UserResponseDto ApprovedBy { get; set; }
+    
+    public string ApprovedByName { get; set; } = string.Empty;
+    public DateTime? ActionedAt { get; set; }
     
     public Guid RoleId { get; set; }
     public RoleDto Role { get; set; }

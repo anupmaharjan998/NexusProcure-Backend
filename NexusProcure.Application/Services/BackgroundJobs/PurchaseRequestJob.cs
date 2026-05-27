@@ -135,11 +135,40 @@ public class PurchaseRequestJob : IPurchaseRequestJob
         if (vendor == null)
             throw new Exception("Vendor not found");
 
-        // 1️⃣ Send email (external side effect)
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var rfqId = _context.RequestForQuotations.Where(q => q.RequisitionId == referenceId).Select(q => q.Id).FirstOrDefault();
+            var auditExists = await _context.RfqAudits.AnyAsync(x =>
+                x.RfqId == rfqId &&
+                x.Action == "PurchaseOrderCreated");
+
+            if (!auditExists)
+            {
+                _context.RfqAudits.Add(new RfqAudit
+                {
+                    Id = Guid.NewGuid(),
+                    RfqId = rfqId,
+                    Action = "PurchaseOrderCreated",
+                    CreatedAt = DateTime.UtcNow,
+                    PerformedBy = "System"
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+
         await _emailService.SendAsync(new SendEmailDto
         {
             To = vendor.Email,
-            Subject = $"Purchase Order Award Notification",
+            Subject = "Purchase Order Award Notification",
             HtmlBody = $@"
             <p>Dear {vendor.VendorName},</p>
 
@@ -156,7 +185,9 @@ public class PurchaseRequestJob : IPurchaseRequestJob
             <p>
                 <strong>Purchase Order Details</strong><br/>
                 Purchase Order ID: {po.PurchaseOrderNumber}<br/>
-                Order Date: {po.OrderDate:yyyy-MM-dd}
+                Order Date: {po.OrderDate:yyyy-MM-dd}<br/>
+                Delivery Date: {po.DeliveryDate:yyyy-MM-dd}<br/>
+                Total Amount: NPR {po.TotalAmount:N2}
             </p>
 
             <p>
@@ -177,28 +208,5 @@ public class PurchaseRequestJob : IPurchaseRequestJob
                 NexusProcure
             </p>"
         });
-
-        // 2️⃣ Atomic DB changes
-        await using var tx = await _context.Database.BeginTransactionAsync();
-
-        try
-        {
-            _context.RfqAudits.Add(new RfqAudit
-            {
-                Id = Guid.NewGuid(),
-                RfqId = referenceId,
-                Action = "PurchaseOrderCreated",
-                CreatedAt = DateTime.UtcNow,
-                PerformedBy = "System"
-            });
-
-            await _context.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
     }
 }

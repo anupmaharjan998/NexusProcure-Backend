@@ -23,6 +23,15 @@ public class InventoryRequestService : IInventoryRequestService
 
     public async Task<Guid> CreateAsync(Guid userId, CreateInventoryRequestDto dto)
     {
+        if (dto == null)
+            throw new Exception("Request payload is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.Purpose))
+            throw new Exception("Purpose is required.");
+
+        if (dto.Items == null || !dto.Items.Any())
+            throw new Exception("At least one item is required.");
+
         var user = await _context.Users.FindAsync(userId);
 
         if (user == null)
@@ -31,22 +40,30 @@ public class InventoryRequestService : IInventoryRequestService
         if (user.DepartmentId == null)
             throw new Exception("User must belong to a department.");
 
-        if (dto.Items == null || !dto.Items.Any())
-            throw new Exception("At least one item is required.");
+        var stockIds = dto.Items
+            .Select(x => x.StockId)
+            .Distinct()
+            .ToList();
+
+        var stocks = await _context.InventoryStocks
+            .Include(x => x.Category)
+            .Where(x => stockIds.Contains(x.Id))
+            .ToListAsync();
+
+        if (stocks.Count != stockIds.Count)
+            throw new Exception("One or more stock items were not found.");
 
         var requestItems = new List<InventoryRequestItem>();
 
         foreach (var item in dto.Items)
         {
+            if (item.StockId == Guid.Empty)
+                throw new Exception("Stock item is required.");
+
             if (item.Quantity <= 0)
                 throw new Exception("Quantity must be greater than zero.");
 
-            var stock = await _context.InventoryStocks
-                .Include(x => x.Category)
-                .FirstOrDefaultAsync(x => x.Id == item.StockId);
-
-            if (stock == null)
-                throw new Exception("Stock item not found.");
+            var stock = stocks.First(x => x.Id == item.StockId);
 
             requestItems.Add(new InventoryRequestItem
             {
@@ -62,7 +79,7 @@ public class InventoryRequestService : IInventoryRequestService
             Id = Guid.NewGuid(),
             RequestedById = userId,
             DepartmentId = user.DepartmentId.Value,
-            Purpose = dto.Purpose,
+            Purpose = dto.Purpose.Trim(),
             Priority = dto.Priority,
             Status = InventoryRequestStatus.PendingManagerApproval,
             Items = requestItems,
@@ -73,6 +90,152 @@ public class InventoryRequestService : IInventoryRequestService
         await _context.SaveChangesAsync();
 
         return request.Id;
+    }
+
+    public async Task<List<InventoryRequestSummaryDto>> GetMyRequestsAsync(Guid userId)
+    {
+        return await _context.InventoryRequests
+            .AsNoTracking()
+            .Include(x => x.RequestedBy)
+            .Include(x => x.Department)
+            .Include(x => x.Items)
+            .Where(x => x.RequestedById == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new InventoryRequestSummaryDto
+            {
+                Id = x.Id,
+                RequestedBy = x.RequestedBy.FullName,
+                Department = x.Department.DepartmentName,
+                Purpose = x.Purpose,
+                Priority = x.Priority.ToString(),
+                Status = x.Status.ToString(),
+                TotalItems = x.Items.Count,
+                CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<InventoryRequestSummaryDto>> GetPendingForManagerAsync(Guid managerId)
+    {
+        var delegateUserIds = await _context.UserDelegations
+            .Where(x =>
+                x.DelegateUserId == managerId &&
+                x.IsActive &&
+                x.StartDate <= DateTime.UtcNow &&
+                x.EndDate >= DateTime.UtcNow)
+            .Select(x => x.UserId)
+            .ToListAsync();
+
+        delegateUserIds.Add(managerId);
+
+        return await _context.InventoryRequests
+            .AsNoTracking()
+            .Include(x => x.RequestedBy)
+            .Include(x => x.Department)
+            .Include(x => x.Items)
+            .Where(x =>
+                x.Status == InventoryRequestStatus.PendingManagerApproval &&
+                x.RequestedBy.ManagerId != null &&
+                delegateUserIds.Contains(x.RequestedBy.ManagerId.Value))
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new InventoryRequestSummaryDto
+            {
+                Id = x.Id,
+                RequestedBy = x.RequestedBy.FullName,
+                Department = x.Department.DepartmentName,
+                Purpose = x.Purpose,
+                Priority = x.Priority.ToString(),
+                Status = x.Status.ToString(),
+                TotalItems = x.Items.Count,
+                CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<InventoryRequestSummaryDto>> GetApprovedForInventoryManagerAsync()
+    {
+        return await _context.InventoryRequests
+            .AsNoTracking()
+            .Include(x => x.RequestedBy)
+            .Include(x => x.Department)
+            .Include(x => x.Items)
+            .Where(x => x.Status == InventoryRequestStatus.ApprovedByManager)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new InventoryRequestSummaryDto
+            {
+                Id = x.Id,
+                RequestedBy = x.RequestedBy.FullName,
+                Department = x.Department.DepartmentName,
+                Purpose = x.Purpose,
+                Priority = x.Priority.ToString(),
+                Status = x.Status.ToString(),
+                TotalItems = x.Items.Count,
+                CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    public async Task<InventoryRequestDto?> GetByIdAsync(Guid requestId)
+    {
+        return await _context.InventoryRequests
+            .AsNoTracking()
+            .Include(x => x.RequestedBy)
+            .Include(x => x.Department)
+            .Include(x => x.Items)
+                .ThenInclude(x => x.Stock)
+                    .ThenInclude(x => x.Category)
+            .Include(x => x.Items)
+                .ThenInclude(x => x.IssuedItems)
+                    .ThenInclude(x => x.InventoryItem)
+            .Where(x => x.Id == requestId)
+            .Select(x => new InventoryRequestDto
+            {
+                Id = x.Id,
+                RequestedById = x.RequestedById,
+                RequestedBy = x.RequestedBy.FullName,
+                Department = x.Department.DepartmentName,
+                Purpose = x.Purpose,
+                Priority = x.Priority.ToString(),
+                Status = x.Status.ToString(),
+                Remarks = x.Remarks,
+                CreatedAt = x.CreatedAt,
+                Items = x.Items.Select(i => new InventoryRequestItemDto
+                {
+                    Id = i.Id,
+                    StockId = i.StockId,
+                    StockName = i.Stock.Name,
+                    CategoryName = i.Stock.Category.Name,
+                    QuantityRequested = i.QuantityRequested,
+                    QuantityIssued = i.QuantityIssued,
+                    QuantityAvailable = i.Stock.QuantityAvailable,
+                    IsAssetTracked = i.Stock.Category.IsAssetTracked,
+                    IssuedItems = i.IssuedItems.Select(ii => new IssuedInventoryItemDto
+                    {
+                        InventoryItemId = ii.InventoryItemId,
+                        SKU = ii.InventoryItem.SKU,
+                        SerialNumber = ii.InventoryItem.SerialNumber
+                    }).ToList()
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<AvailableInventoryItemDto>> GetAvailableAssetsByStockAsync(Guid stockId)
+    {
+        return await _context.InventoryItems
+            .AsNoTracking()
+            .Where(x =>
+                x.StockId == stockId &&
+                x.Status == InventoryItemStatus.Available)
+            .OrderBy(x => x.SKU)
+            .Select(x => new AvailableInventoryItemDto
+            {
+                Id = x.Id,
+                SKU = x.SKU,
+                SerialNumber = x.SerialNumber,
+                Status = x.Status.ToString()
+            })
+            .ToListAsync();
     }
 
     public async Task ApproveByManagerAsync(Guid requestId, Guid approverId)
@@ -98,6 +261,7 @@ public class InventoryRequestService : IInventoryRequestService
 
         request.Status = InventoryRequestStatus.ApprovedByManager;
         request.ApprovedByManagerId = approverId;
+        request.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
     }
@@ -126,6 +290,7 @@ public class InventoryRequestService : IInventoryRequestService
         request.Status = InventoryRequestStatus.RejectedByManager;
         request.ApprovedByManagerId = approverId;
         request.Remarks = remarks;
+        request.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
     }
@@ -161,20 +326,26 @@ public class InventoryRequestService : IInventoryRequestService
                 var dtoItem = dto.Items
                     .FirstOrDefault(x => x.InventoryRequestItemId == requestItem.Id);
 
-                if (dtoItem == null || dtoItem.InventoryItemIds.Count == 0)
-                    throw new Exception($"Asset selection required for {stock.Name}.");
+                var selectedAssetIds = dtoItem?.InventoryItemIds?.Distinct().ToList() ?? new List<Guid>();
 
-                if (dtoItem.InventoryItemIds.Count > requestItem.QuantityRequested)
+                if (selectedAssetIds.Count > requestItem.QuantityRequested)
                     throw new Exception($"Selected assets exceed requested quantity for {stock.Name}.");
+
+                if (!selectedAssetIds.Any())
+                {
+                    requestItem.QuantityIssued = 0;
+                    allAvailable = false;
+                    continue;
+                }
 
                 var selectedAssets = await _context.InventoryItems
                     .Where(x =>
-                        dtoItem.InventoryItemIds.Contains(x.Id) &&
+                        selectedAssetIds.Contains(x.Id) &&
                         x.StockId == stock.Id &&
                         x.Status == InventoryItemStatus.Available)
                     .ToListAsync();
 
-                if (selectedAssets.Count != dtoItem.InventoryItemIds.Count)
+                if (selectedAssets.Count != selectedAssetIds.Count)
                     throw new Exception($"Some selected assets for {stock.Name} are not available.");
 
                 requestItem.QuantityIssued = selectedAssets.Count;
@@ -187,6 +358,7 @@ public class InventoryRequestService : IInventoryRequestService
                     asset.Status = InventoryItemStatus.Assigned;
                     asset.AssignedToId = request.RequestedById;
                     asset.AssignedDate = DateTime.UtcNow;
+                    asset.UpdatedAt = DateTime.UtcNow;
 
                     _context.InventoryAssignmentHistories.Add(new InventoryAssignmentHistory
                     {
@@ -196,30 +368,37 @@ public class InventoryRequestService : IInventoryRequestService
                         AssignedDate = DateTime.UtcNow,
                         ActionType = "ASSIGNED",
                         PerformedById = inventoryManagerId,
-                        Notes = $"Issued through inventory request {request.Id}"
+                        Notes = $"Issued through inventory request {request.Id}",
+                        CreatedAt = DateTime.UtcNow
                     });
 
                     _context.InventoryRequestIssuedItems.Add(new InventoryRequestIssuedItem
                     {
                         Id = Guid.NewGuid(),
                         InventoryRequestItemId = requestItem.Id,
-                        InventoryItemId = asset.Id
+                        InventoryItemId = asset.Id,
+                        CreatedAt = DateTime.UtcNow
                     });
                 }
 
                 stock.QuantityAvailable -= requestItem.QuantityIssued;
+                stock.UpdatedAt = DateTime.UtcNow;
 
-                _context.InventoryTransactions.Add(new InventoryTransaction
+                if (requestItem.QuantityIssued > 0)
                 {
-                    Id = Guid.NewGuid(),
-                    StockId = stock.Id,
-                    QuantityChange = -requestItem.QuantityIssued,
-                    Type = InventoryTransactionType.Issue,
-                    ReferenceId = request.Id,
-                    TransactionDate = DateTime.UtcNow,
-                    PerformedById = inventoryManagerId,
-                    Remarks = "Asset issued to user."
-                });
+                    _context.InventoryTransactions.Add(new InventoryTransaction
+                    {
+                        Id = Guid.NewGuid(),
+                        StockId = stock.Id,
+                        QuantityChange = -requestItem.QuantityIssued,
+                        Type = InventoryTransactionType.Issue,
+                        ReferenceId = request.Id,
+                        TransactionDate = DateTime.UtcNow,
+                        PerformedById = inventoryManagerId,
+                        Remarks = "Asset issued to user.",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
             }
             else
             {
@@ -235,40 +414,69 @@ public class InventoryRequestService : IInventoryRequestService
                     allAvailable = false;
                 }
 
-                _context.InventoryTransactions.Add(new InventoryTransaction
+                stock.UpdatedAt = DateTime.UtcNow;
+
+                if (requestItem.QuantityIssued > 0)
                 {
-                    Id = Guid.NewGuid(),
-                    StockId = stock.Id,
-                    QuantityChange = -requestItem.QuantityIssued,
-                    Type = InventoryTransactionType.Issue,
-                    ReferenceId = request.Id,
-                    TransactionDate = DateTime.UtcNow,
-                    PerformedById = inventoryManagerId,
-                    Remarks = "Consumable stock issued to user."
-                });
+                    _context.InventoryTransactions.Add(new InventoryTransaction
+                    {
+                        Id = Guid.NewGuid(),
+                        StockId = stock.Id,
+                        QuantityChange = -requestItem.QuantityIssued,
+                        Type = InventoryTransactionType.Issue,
+                        ReferenceId = request.Id,
+                        TransactionDate = DateTime.UtcNow,
+                        PerformedById = inventoryManagerId,
+                        Remarks = "Consumable stock issued to user.",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
             }
         }
 
         request.ProcessedByInventoryManagerId = inventoryManagerId;
-        request.Status = allAvailable
-            ? InventoryRequestStatus.Completed
-            : InventoryRequestStatus.SentForProcurement;
+
+        if (allAvailable)
+        {
+            request.Status = InventoryRequestStatus.Completed;
+            request.Remarks = "Inventory request completed successfully.";
+        }
+        else
+        {
+            request.Status = InventoryRequestStatus.PendingManagerProcurementDecision;
+            request.Remarks = "Insufficient inventory quantity. Waiting for manager decision.";
+        }
+
+        request.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         await tx.CommitAsync();
     }
-
-    public async Task<InventoryRequestDto?> GetByIdAsync(Guid requestId)
+    
+    public async Task<List<InventoryRequestSummaryDto>> GetShortagePendingForManagerAsync(Guid managerId)
     {
+        var delegateUserIds = await _context.UserDelegations
+            .Where(x =>
+                x.DelegateUserId == managerId &&
+                x.IsActive &&
+                x.StartDate <= DateTime.UtcNow &&
+                x.EndDate >= DateTime.UtcNow)
+            .Select(x => x.UserId)
+            .ToListAsync();
+
+        delegateUserIds.Add(managerId);
+
         return await _context.InventoryRequests
+            .AsNoTracking()
             .Include(x => x.RequestedBy)
             .Include(x => x.Department)
             .Include(x => x.Items)
-                .ThenInclude(x => x.Stock)
-                    .ThenInclude(x => x.Category)
-            .AsNoTracking()
-            .Where(x => x.Id == requestId)
-            .Select(x => new InventoryRequestDto
+            .Where(x =>
+                x.Status == InventoryRequestStatus.PendingManagerProcurementDecision &&
+                x.RequestedBy.ManagerId != null &&
+                delegateUserIds.Contains(x.RequestedBy.ManagerId.Value))
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new InventoryRequestSummaryDto
             {
                 Id = x.Id,
                 RequestedBy = x.RequestedBy.FullName,
@@ -276,16 +484,87 @@ public class InventoryRequestService : IInventoryRequestService
                 Purpose = x.Purpose,
                 Priority = x.Priority.ToString(),
                 Status = x.Status.ToString(),
-                Items = x.Items.Select(i => new InventoryRequestItemDto
-                {
-                    Id = i.Id,
-                    StockId = i.StockId,
-                    StockName = i.Stock.Name,
-                    QuantityRequested = i.QuantityRequested,
-                    QuantityIssued = i.QuantityIssued,
-                    IsAssetTracked = i.Stock.Category.IsAssetTracked
-                }).ToList()
+                TotalItems = x.Items.Count,
+                CreatedAt = x.CreatedAt
             })
-            .FirstOrDefaultAsync();
+            .ToListAsync();
+    }
+    
+    public async Task SendShortageToProcurementAsync(
+        Guid requestId,
+        Guid managerId,
+        string? remarks = null)
+    {
+        var request = await _context.InventoryRequests
+            .Include(x => x.RequestedBy)
+            .Include(x => x.Items)
+            .ThenInclude(x => x.Stock)
+            .FirstOrDefaultAsync(x => x.Id == requestId);
+
+        if (request == null)
+            throw new Exception("Inventory request not found.");
+
+        if (request.Status != InventoryRequestStatus.PendingManagerProcurementDecision)
+            throw new Exception("Request is not waiting for manager procurement decision.");
+
+        await ValidateManagerOrDelegateAsync(request, managerId);
+
+        request.Status = InventoryRequestStatus.SentForProcurement;
+        request.Remarks = string.IsNullOrWhiteSpace(remarks)
+            ? "Manager approved shortage request for procurement."
+            : remarks.Trim();
+
+        request.UpdatedAt = DateTime.UtcNow;
+
+        /*
+           OPTIONAL:
+           If your ProcurementRequest entity is ready, create procurement request here.
+
+           Example idea:
+           - Create ProcurementRequest
+           - Create ProcurementRequestItems only for shortage quantity
+           - Link it back to InventoryRequest.Id if you have ReferenceId field
+        */
+
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task RejectShortageAsync(
+        Guid requestId,
+        Guid managerId,
+        string? remarks = null)
+    {
+        var request = await _context.InventoryRequests
+            .Include(x => x.RequestedBy)
+            .FirstOrDefaultAsync(x => x.Id == requestId);
+    
+        if (request == null)
+            throw new Exception("Inventory request not found.");
+    
+        if (request.Status != InventoryRequestStatus.PendingManagerProcurementDecision)
+            throw new Exception("Request is not waiting for manager procurement decision.");
+    
+        await ValidateManagerOrDelegateAsync(request, managerId);
+    
+        request.Status = InventoryRequestStatus.RejectedInsufficientQuantity;
+        request.Remarks = string.IsNullOrWhiteSpace(remarks)
+            ? "Rejected due to insufficient inventory quantity."
+            : remarks.Trim();
+    
+        request.UpdatedAt = DateTime.UtcNow;
+    
+        await _context.SaveChangesAsync();
+    }
+    
+    private async Task ValidateManagerOrDelegateAsync(InventoryRequest request, Guid managerId)
+    {
+        var actualManagerId = request.RequestedBy.ManagerId
+            ?? throw new Exception("Manager not assigned.");
+    
+        var delegateUser = await _delegationService.GetActiveDelegateAsync(actualManagerId);
+        var validApprover = delegateUser?.Id ?? actualManagerId;
+    
+        if (managerId != validApprover)
+            throw new Exception("Unauthorized.");
     }
 }

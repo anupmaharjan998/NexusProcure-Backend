@@ -1,42 +1,27 @@
-﻿using NexusProcure.Application.Services.Procurement;
-
-namespace NexusProcure.Core.DTOs.Procurement;
+﻿namespace NexusProcure.Core.DTOs.Procurement;
 
 public class RequisitionCreateDto
 {
     public Guid RequestedById { get; set; }
-    public Guid CategoryId { get; set; }   // ✅ ADD
-    public bool IsUrgent { get; set; }      // ✅ ADD
-    public List<RequisitionItemDto> Items { get; set; } = new List<RequisitionItemDto>();
+
+    public bool IsUrgent { get; set; }
+
+    public string Purpose { get; set; } = string.Empty;
+
+    public DateTime? RequiredDate { get; set; }
+
+    public string? Notes { get; set; }
+
+    public List<RequisitionItemCreateDto> Items { get; set; } = new();
 }
 
-public class RequisitionItemDto
+public class RequisitionItemCreateDto
 {
-    public Guid Id { get; set; }
-    public Guid RequisitionId { get; set; }
-    public string ItemName { get; set; } = string.Empty;
+    public Guid InventoryStockId { get; set; }
+
     public int Quantity { get; set; }
+
     public decimal EstimatedCost { get; set; }
-}
 
-public class RequisitionResponseDto
-{
-    public Guid Id { get; set; }
-    public string RequisitionNumber { get; set; }
-    public Guid RequestedById { get; set; }
-    public UserResponseDto RequestedBy { get; set; }
-    
-    public decimal TotalAmount { get; set; }
-    public string RequestedByName { get; set; }
-
-    public DateTime RequestedDate { get; set; }
-    public string Status { get; set; } = "Pending"; // Pending, Approved, Rejected
-    
-    public string CategoryName { get; set; }
-
-    // Navigation
-    public List<RequisitionItemDto> Items { get; set; }
-    public List<ApprovalDto> Approvals { get; set; }
-    // public List<PurchaseOrderDto> PurchaseOrders { get; set; }
-
+    public string? Remarks { get; set; }
 }

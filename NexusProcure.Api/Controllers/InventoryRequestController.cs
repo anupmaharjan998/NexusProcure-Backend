@@ -32,6 +32,34 @@ public class InventoryRequestController : ControllerBase
         });
     }
 
+    [HttpGet("my")]
+    public async Task<IActionResult> GetMyRequests()
+    {
+        var userId = GetUserId();
+
+        var result = await _service.GetMyRequestsAsync(userId);
+
+        return Ok(result);
+    }
+
+    [HttpGet("manager-pending")]
+    public async Task<IActionResult> GetPendingForManager()
+    {
+        var managerId = GetUserId();
+
+        var result = await _service.GetPendingForManagerAsync(managerId);
+
+        return Ok(result);
+    }
+
+    [HttpGet("inventory-pending")]
+    public async Task<IActionResult> GetApprovedForInventoryManager()
+    {
+        var result = await _service.GetApprovedForInventoryManagerAsync();
+
+        return Ok(result);
+    }
+
     [HttpGet("{requestId:guid}")]
     public async Task<IActionResult> GetById(Guid requestId)
     {
@@ -39,6 +67,14 @@ public class InventoryRequestController : ControllerBase
 
         if (result == null)
             return NotFound("Inventory request not found.");
+
+        return Ok(result);
+    }
+
+    [HttpGet("stocks/{stockId:guid}/available-assets")]
+    public async Task<IActionResult> GetAvailableAssets(Guid stockId)
+    {
+        var result = await _service.GetAvailableAssetsByStockAsync(stockId);
 
         return Ok(result);
     }
@@ -83,6 +119,46 @@ public class InventoryRequestController : ControllerBase
         return Ok(new
         {
             Message = "Inventory request processed successfully."
+        });
+    }
+    
+    [HttpGet("manager-shortage-pending")]
+    public async Task<IActionResult> GetShortagePendingForManager()
+    {
+        var managerId = GetUserId();
+
+        var result = await _service.GetShortagePendingForManagerAsync(managerId);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{requestId:guid}/shortage/send-procurement")]
+    public async Task<IActionResult> SendShortageToProcurement(
+        Guid requestId,
+        [FromBody] ResolveInventoryShortageDto dto)
+    {
+        var managerId = GetUserId();
+
+        await _service.SendShortageToProcurementAsync(requestId, managerId, dto.Remarks);
+
+        return Ok(new
+        {
+            Message = "Inventory request sent to procurement."
+        });
+    }
+
+    [HttpPost("{requestId:guid}/shortage/reject")]
+    public async Task<IActionResult> RejectShortage(
+        Guid requestId,
+        [FromBody] ResolveInventoryShortageDto dto)
+    {
+        var managerId = GetUserId();
+
+        await _service.RejectShortageAsync(requestId, managerId, dto.Remarks);
+
+        return Ok(new
+        {
+            Message = "Inventory request rejected due to insufficient quantity."
         });
     }
 
