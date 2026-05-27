@@ -13,10 +13,9 @@ public class NexusProcureDbContext : DbContext
 {
     public NexusProcureDbContext(DbContextOptions options) : base(options)
     {
-        
     }
 
-    
+
     public DbSet<User> Users { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<Department> Departments { get; set; }
@@ -33,18 +32,18 @@ public class NexusProcureDbContext : DbContext
 
     public DbSet<Vendor> Vendors { get; set; }
     public DbSet<VendorDocument> VendorDocuments { get; set; }
-    
+
     public DbSet<AssetAssignment> AssetAssignments { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
 
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<RolePermission> RolePermissions { get; set; }
-    
+
     //public DbSet<Category> Categories { get; set; }
     public DbSet<ApprovalDelegation> ApprovalDelegations { get; set; }
-    
+
     public DbSet<TotalAmountRiskScore> TotalAmountRiskScores { get; set; }
-    
+
     public DbSet<Quotation> Quotations { get; set; }
     public DbSet<QuotationItem> QuotationItems { get; set; }
     public DbSet<RequestForQuotation> RequestForQuotations { get; set; }
@@ -52,7 +51,9 @@ public class NexusProcureDbContext : DbContext
     public DbSet<RfqAudit> RfqAudits { get; set; }
     public DbSet<RfqAccessToken> RfqAccessTokens { get; set; }
     public DbSet<InventoryCategory> InventoryCategories { get; set; }
+
     public DbSet<InventoryItem> InventoryItems { get; set; }
+
     // public DbSet<Stock> Stocks { get; set; }
     // public DbSet<StockTransaction> StockTransactions { get; set; }
     public DbSet<GoodsReceipt> GoodsReceipts { get; set; }
@@ -66,21 +67,19 @@ public class NexusProcureDbContext : DbContext
     public DbSet<ProcurementRequest> ProcurementRequests { get; set; }
     public DbSet<ProcurementRequestItem> ProcurementRequestItems { get; set; }
     public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
-    
+
     public DbSet<InventoryRequestIssuedItem> InventoryRequestIssuedItems { get; set; }
-    
-    
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
-        //Dashboard 
-        //Stored Procedure
+
+        // Dashboard Stored Procedure DTOs
         modelBuilder.Entity<DashboardStatsDto>().HasNoKey();
         modelBuilder.Entity<RecentPurchaseOrderDto>().HasNoKey();
         modelBuilder.Entity<DeliveryDto>().HasNoKey();
-        
+
         /* ===============================
            Requisition Number Sequence
         =============================== */
@@ -93,65 +92,116 @@ public class NexusProcureDbContext : DbContext
         =============================== */
         modelBuilder.Entity<Requisition>(entity =>
         {
+            entity.HasKey(r => r.Id);
+
             entity.Property(r => r.RequisitionNumber)
                 .IsRequired()
-                .HasMaxLength(20);
+                .HasMaxLength(50);
 
             entity.HasIndex(r => r.RequisitionNumber)
                 .IsUnique();
+
+            entity.Property(r => r.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(r => r.Purpose)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(r => r.Notes)
+                .HasMaxLength(1000);
+
+            entity.Property(r => r.TotalAmount)
+                .HasColumnType("numeric(18,2)");
+
+            entity.Property(r => r.RiskLevel)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.HasOne(r => r.RequestedBy)
+                .WithMany()
+                .HasForeignKey(r => r.RequestedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(r => r.Items)
+                .WithOne(i => i.Requisition)
+                .HasForeignKey(i => i.RequisitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(r => r.Approvals)
+                .WithOne()
+                .HasForeignKey(a => a.ReferenceId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(r => r.PurchaseOrders)
+                .WithOne(po => po.Requisition)
+                .HasForeignKey(po => po.RequisitionId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Requisition → Items (1-M)
-        modelBuilder.Entity<Requisition>()
-            .HasMany(r => r.Items)
-            .WithOne(i => i.Requisition)
-            .HasForeignKey(i => i.RequisitionId)
-            .OnDelete(DeleteBehavior.Cascade);
-        
+        /* ===============================
+           Requisition Item Configuration
+        =============================== */
+        modelBuilder.Entity<RequisitionItem>(entity =>
+        {
+            entity.HasKey(i => i.Id);
 
-        
-        // PR → PO 
+            entity.Property(i => i.Quantity)
+                .IsRequired();
+
+            entity.Property(i => i.EstimatedCost)
+                .HasColumnType("numeric(18,2)");
+
+            entity.Property(i => i.Remarks)
+                .HasMaxLength(500);
+
+            entity.HasOne(i => i.Requisition)
+                .WithMany(r => r.Items)
+                .HasForeignKey(i => i.RequisitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(i => i.InventoryStock)
+                .WithMany()
+                .HasForeignKey(i => i.InventoryStockId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(i => i.RequisitionId);
+            entity.HasIndex(i => i.InventoryStockId);
+        });
+
+        /* ===============================
+           Purchase Order Number Sequence
+        =============================== */
         modelBuilder.HasSequence<long>("purchase_order_number_seq")
             .StartsAt(1)
             .IncrementsBy(1);
-        
-        
-        
-        modelBuilder.Entity<PurchaseOrder>()
-            .HasOne(po => po.Requisition)
-            .WithMany(r => r.PurchaseOrders)
-            .HasForeignKey(po => po.RequisitionId);
-        
-        modelBuilder.Entity<Requisition>()
-            .Property(r => r.RiskLevel)
-            .HasConversion<string>()     // 👈 stores enum NAME
-            .HasMaxLength(20)
-            .IsRequired();
 
-        
-        // User → Department (1-M)
+        /* ===============================
+           User Configuration
+        =============================== */
         modelBuilder.Entity<User>()
             .HasOne(u => u.Department)
             .WithMany(d => d.Users)
             .HasForeignKey(u => u.DepartmentId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        
-        // User → Role (1-M)
         modelBuilder.Entity<User>()
             .HasOne(u => u.Role)
             .WithMany(r => r.Users)
             .HasForeignKey(u => u.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        // User
+
         modelBuilder.Entity<User>()
             .HasOne(u => u.Manager)
             .WithMany(u => u.Subordinates)
             .HasForeignKey(u => u.ManagerId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        // User Delegation
+
+        /* ===============================
+           User Delegation Configuration
+        =============================== */
         modelBuilder.Entity<UserDelegation>(entity =>
         {
             entity.HasKey(d => d.Id);
@@ -180,14 +230,13 @@ public class NexusProcureDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(d => d.UserId);
-
             entity.HasIndex(d => d.DelegateUserId);
-
             entity.HasIndex(d => new { d.UserId, d.IsActive });
         });
-        
-        // Vendor → Category (optional 1-M)
 
+        /* ===============================
+           Vendor Category Configuration
+        =============================== */
         modelBuilder.Entity<VendorCategory>()
             .HasKey(vc => new { vc.VendorId, vc.CategoryId });
 
@@ -200,9 +249,10 @@ public class NexusProcureDbContext : DbContext
             .HasOne(vc => vc.Category)
             .WithMany(c => c.VendorCategories)
             .HasForeignKey(vc => vc.CategoryId);
-        
-        
-        // Enum conversions for Vendor
+
+        /* ===============================
+           Vendor Configuration
+        =============================== */
         modelBuilder.Entity<Vendor>()
             .Property(v => v.PaymentTerms)
             .HasConversion<string>()
@@ -212,32 +262,34 @@ public class NexusProcureDbContext : DbContext
             .Property(v => v.TaxType)
             .HasConversion<string>()
             .HasMaxLength(10);
-        
-        // Vendor → Documents (1-M)
+
         modelBuilder.Entity<VendorDocument>()
             .HasOne(d => d.Vendor)
             .WithMany(v => v.Documents)
             .HasForeignKey(d => d.VendorId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        
-        // Department → Head (Self-Reference)
+        /* ===============================
+           Department Configuration
+        =============================== */
         modelBuilder.Entity<Department>()
             .HasOne(d => d.Head)
             .WithMany()
             .HasForeignKey(d => d.HeadId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        
-        // InventoryItem → AssetAssignments (1-M)
+        /* ===============================
+           Asset Assignment Configuration
+        =============================== */
         modelBuilder.Entity<AssetAssignment>()
             .HasOne(a => a.InventoryItem)
             .WithMany(i => i.AssetAssignments)
             .HasForeignKey(a => a.InventoryItemId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        
-        // RolePermission (Composite Key)
+        /* ===============================
+           Role Permission Configuration
+        =============================== */
         modelBuilder.Entity<RolePermission>()
             .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
@@ -250,143 +302,288 @@ public class NexusProcureDbContext : DbContext
             .HasOne(rp => rp.Permission)
             .WithMany(p => p.RolePermissions)
             .HasForeignKey(rp => rp.PermissionId);
-        
-        //RFQ
+
+        /* ===============================
+           RFQ Configuration
+        =============================== */
         modelBuilder.Entity<RfqVendor>()
             .HasIndex(v => v.AccessToken)
             .IsUnique();
-        
+
         modelBuilder.Entity<Quotation>()
             .HasOne(q => q.RequestForQuotation)
             .WithMany(r => r.Quotations)
             .HasForeignKey(q => q.RfqId)
             .OnDelete(DeleteBehavior.Restrict);
 
-
-        /* ===============================
-           RFQ Number Sequence
-        =============================== */
         modelBuilder.HasSequence<long>("rfq_number_seq")
             .StartsAt(1)
             .IncrementsBy(1);
 
-        
-        //Inventory
-        
-        
-
-        // Unique Category Code
+        /* ===============================
+           Inventory Category Configuration
+        =============================== */
         modelBuilder.Entity<InventoryCategory>()
             .HasIndex(x => x.CategoryCode)
             .IsUnique();
 
-        // Self-reference
         modelBuilder.Entity<InventoryCategory>()
             .HasOne(c => c.ParentInventoryCategory)
             .WithMany(c => c.SubCategories)
             .HasForeignKey(c => c.ParentCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        modelBuilder.Entity<InventoryStock>()
-            .HasIndex(x => new { x.Name, x.CategoryId })
-            .IsUnique();
-        
-        modelBuilder.Entity<InventoryStock>()
-            .HasMany(x => x.Items)
-            .WithOne(x => x.Stock)
-            .HasForeignKey(x => x.StockId)
-            .OnDelete(DeleteBehavior.Restrict);
-        
-        modelBuilder.Entity<InventoryItem>()
-            .HasIndex(x => x.SKU)
-            .IsUnique();
-        
-        modelBuilder.Entity<GoodsReceipt>()
-            .HasOne(gr => gr.PurchaseOrder)
-            .WithMany()
-            .HasForeignKey(gr => gr.PurchaseOrderId)
-            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<GoodsReceipt>()
-            .HasOne(gr => gr.ReceivedBy)
-            .WithMany()
-            .HasForeignKey(gr => gr.ReceivedById)
-            .OnDelete(DeleteBehavior.Restrict);
+        /* ===============================
+           Inventory Stock Configuration
+        =============================== */
+        modelBuilder.Entity<InventoryStock>(entity =>
+        {
+            entity.HasKey(x => x.Id);
 
-        modelBuilder.Entity<GoodsReceiptItem>()
-            .HasOne(gri => gri.GoodsReceipt)
-            .WithMany(gr => gr.Items)
-            .HasForeignKey(gri => gri.GoodsReceiptId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.Name, x.CategoryId })
+                .IsUnique();
 
-        modelBuilder.Entity<GoodsReceiptItem>()
-            .HasOne(gri => gri.PurchaseOrderItem)
-            .WithMany()
-            .HasForeignKey(gri => gri.PurchaseOrderItemId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<GoodsReceiptItem>()
-            .HasOne(gri => gri.InventoryItem)
-            .WithMany()
-            .HasForeignKey(gri => gri.InventoryItemId)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(x => x.Items)
+                .WithOne(x => x.Stock)
+                .HasForeignKey(x => x.StockId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<GoodsReceipt>()
-            .Property(gr => gr.InventoryProcessingStatus)
-            .HasConversion<string>()
-            .HasMaxLength(20);
-        
-        
-        modelBuilder.Entity<InventoryAssignmentHistory>()
-            .HasOne(h => h.InventoryItem)
-            .WithMany(i => i.AssignmentHistories)
-            .HasForeignKey(h => h.InventoryItemId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(x => x.Transactions)
+                .WithOne(x => x.Stock)
+                .HasForeignKey(x => x.StockId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
-        modelBuilder.Entity<InventoryAssignmentHistory>()
-            .HasOne(h => h.AssignedTo)
-            .WithMany()
-            .HasForeignKey(h => h.AssignedToId)
-            .OnDelete(DeleteBehavior.Restrict);
+        /* ===============================
+           Inventory Item Configuration
+        =============================== */
+        modelBuilder.Entity<InventoryItem>(entity =>
+        {
+            entity.HasKey(x => x.Id);
 
-        modelBuilder.Entity<InventoryAssignmentHistory>()
-            .HasOne(h => h.PerformedBy)
-            .WithMany()
-            .HasForeignKey(h => h.PerformedById)
-            .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(x => x.SKU)
+                .IsUnique();
 
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
 
-        modelBuilder.Entity<InventoryItem>()
-            .HasOne(i => i.AssignedTo)
-            .WithMany()
-            .HasForeignKey(i => i.AssignedToId)
-            .OnDelete(DeleteBehavior.Restrict);
-        
-        modelBuilder.Entity<InventoryRequestItem>()
-            .HasOne(x => x.InventoryRequest)
-            .WithMany(x => x.Items)
-            .HasForeignKey(x => x.InventoryRequestId)
-            .OnDelete(DeleteBehavior.Cascade);
-        
-        modelBuilder.Entity<InventoryRequestIssuedItem>()
-            .HasOne(x => x.InventoryRequestItem)
-            .WithMany(x => x.IssuedItems)
-            .HasForeignKey(x => x.InventoryRequestItemId)
-            .OnDelete(DeleteBehavior.Cascade);
-        
-        modelBuilder.Entity<InventoryRequestIssuedItem>()
-            .HasOne(x => x.InventoryItem)
-            .WithMany()
-            .HasForeignKey(x => x.InventoryItemId)
-            .OnDelete(DeleteBehavior.Restrict);
-        
-        modelBuilder.Entity<InventoryTransaction>()
-            .HasOne(x => x.Stock)
-            .WithMany(x => x.Transactions)
-            .HasForeignKey(x => x.StockId)
-            .OnDelete(DeleteBehavior.Restrict);
-        
-        // SEEDS
+            entity.Property(x => x.Condition)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.HasOne(x => x.Stock)
+                .WithMany(x => x.Items)
+                .HasForeignKey(x => x.StockId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AssignedTo)
+                .WithMany()
+                .HasForeignKey(x => x.AssignedToId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.InventoryCategory)
+                .WithMany()
+                .HasForeignKey(x => x.InventoryCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.CreatedBy)
+                .WithMany()
+                .HasForeignKey(x => x.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        /* ===============================
+           Goods Receipt Configuration
+        =============================== */
+        modelBuilder.Entity<GoodsReceipt>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(gr => gr.PurchaseOrder)
+                .WithMany()
+                .HasForeignKey(gr => gr.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(gr => gr.ReceivedBy)
+                .WithMany()
+                .HasForeignKey(gr => gr.ReceivedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(gr => gr.InventoryProcessingStatus)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<GoodsReceiptItem>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(gri => gri.GoodsReceipt)
+                .WithMany(gr => gr.Items)
+                .HasForeignKey(gri => gri.GoodsReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(gri => gri.PurchaseOrderItem)
+                .WithMany()
+                .HasForeignKey(gri => gri.PurchaseOrderItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(gri => gri.InventoryItem)
+                .WithMany()
+                .HasForeignKey(gri => gri.InventoryItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        /* ===============================
+           Inventory Assignment History Configuration
+        =============================== */
+        modelBuilder.Entity<InventoryAssignmentHistory>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(h => h.InventoryItem)
+                .WithMany(i => i.AssignmentHistories)
+                .HasForeignKey(h => h.InventoryItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(h => h.AssignedTo)
+                .WithMany()
+                .HasForeignKey(h => h.AssignedToId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(h => h.PerformedBy)
+                .WithMany()
+                .HasForeignKey(h => h.PerformedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        /* ===============================
+           Inventory Transaction Configuration
+        =============================== */
+        modelBuilder.Entity<InventoryTransaction>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.Stock)
+                .WithMany(x => x.Transactions)
+                .HasForeignKey(x => x.StockId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(x => x.Type)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.HasIndex(x => x.StockId);
+            entity.HasIndex(x => x.TransactionDate);
+        });
+
+        /* ===============================
+           Inventory Request Configuration
+        =============================== */
+        modelBuilder.Entity<InventoryRequest>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Purpose)
+                .IsRequired()
+                .HasMaxLength(1000);
+
+            entity.Property(x => x.Priority)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.Remarks)
+                .HasMaxLength(1000);
+
+            entity.HasOne(x => x.RequestedBy)
+                .WithMany()
+                .HasForeignKey(x => x.RequestedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Department)
+                .WithMany()
+                .HasForeignKey(x => x.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.ApprovedByManager)
+                .WithMany()
+                .HasForeignKey(x => x.ApprovedByManagerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.ProcessedByInventoryManager)
+                .WithMany()
+                .HasForeignKey(x => x.ProcessedByInventoryManagerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.Items)
+                .WithOne(x => x.InventoryRequest)
+                .HasForeignKey(x => x.InventoryRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => x.RequestedById);
+            entity.HasIndex(x => x.DepartmentId);
+            entity.HasIndex(x => x.Status);
+            entity.HasIndex(x => x.CreatedAt);
+        });
+
+        modelBuilder.Entity<InventoryRequestItem>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.QuantityRequested)
+                .IsRequired();
+
+            entity.Property(x => x.QuantityIssued)
+                .IsRequired();
+
+            entity.HasOne(x => x.Stock)
+                .WithMany()
+                .HasForeignKey(x => x.StockId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(x => x.IssuedItems)
+                .WithOne(x => x.InventoryRequestItem)
+                .HasForeignKey(x => x.InventoryRequestItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => x.InventoryRequestId);
+            entity.HasIndex(x => x.StockId);
+        });
+
+        modelBuilder.Entity<InventoryRequestIssuedItem>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.HasOne(x => x.InventoryItem)
+                .WithMany()
+                .HasForeignKey(x => x.InventoryItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(x => x.InventoryRequestItemId);
+            entity.HasIndex(x => x.InventoryItemId);
+
+            entity.HasIndex(x => new { x.InventoryRequestItemId, x.InventoryItemId })
+                .IsUnique();
+        });
+
+        /* ===============================
+           Seeds
+        =============================== */
         SeedRoles(modelBuilder);
         SeedAdminUser(modelBuilder);
         PermissionSeed.Seed(modelBuilder);

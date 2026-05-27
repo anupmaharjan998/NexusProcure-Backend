@@ -36,7 +36,7 @@ public class InventoryItem : BaseEntity
     public Guid? CreatedById { get; set; }
     public User CreatedBy { get; set; }
     
-    
+    public DateTime UpdatedAt { get; set; }
 
     public ICollection<InventoryAssignmentHistory> AssignmentHistories { get; set; }
 }

@@ -186,9 +186,6 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<int>("ReferenceType")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("RequisitionId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid");
 
@@ -203,7 +200,7 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasIndex("ApprovedById");
 
-                    b.HasIndex("RequisitionId");
+                    b.HasIndex("ReferenceId");
 
                     b.HasIndex("RoleId");
 
@@ -482,6 +479,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<Guid>("AssignedToId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("InventoryItemId")
                         .HasColumnType("uuid");
 
@@ -569,8 +569,10 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Condition")
-                        .HasColumnType("integer");
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -583,6 +585,9 @@ namespace NexusProcure.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<Guid>("InventoryCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("InventoryCategoryId1")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Location")
@@ -600,11 +605,16 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<string>("SerialNumber")
                         .HasColumnType("text");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<Guid>("StockId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -613,6 +623,8 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasIndex("CreatedById");
 
                     b.HasIndex("InventoryCategoryId");
+
+                    b.HasIndex("InventoryCategoryId1");
 
                     b.HasIndex("SKU")
                         .IsUnique();
@@ -637,34 +649,47 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<Guid?>("ProcessedByInventoryManagerId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("Remarks")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<Guid>("RequestedById")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ApprovedByManagerId");
+
+                    b.HasIndex("CreatedAt");
 
                     b.HasIndex("DepartmentId");
 
                     b.HasIndex("ProcessedByInventoryManagerId");
 
                     b.HasIndex("RequestedById");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("InventoryRequests");
                 });
@@ -689,6 +714,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasIndex("InventoryItemId");
 
                     b.HasIndex("InventoryRequestItemId");
+
+                    b.HasIndex("InventoryRequestItemId", "InventoryItemId")
+                        .IsUnique();
 
                     b.ToTable("InventoryRequestIssuedItems");
                 });
@@ -738,6 +766,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("InventoryCategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -756,11 +787,16 @@ namespace NexusProcure.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("InventoryCategoryId");
 
                     b.HasIndex("Name", "CategoryId")
                         .IsUnique();
@@ -795,14 +831,18 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("PerformedById");
 
                     b.HasIndex("StockId");
+
+                    b.HasIndex("TransactionDate");
 
                     b.ToTable("InventoryTransactions");
                 });
@@ -1257,6 +1297,230 @@ namespace NexusProcure.Infrastructure.Migrations
                             Description = "Create and manage own delegation",
                             Group = "Delegation",
                             Key = "DELEGATION"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000001"),
+                            Description = "View dashboard",
+                            Group = "Dashboard",
+                            Key = "VIEW_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000002"),
+                            Description = "View employee dashboard summary",
+                            Group = "Dashboard",
+                            Key = "VIEW_EMPLOYEE_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000003"),
+                            Description = "View own requisition statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_MY_REQUISITION_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000004"),
+                            Description = "View own assigned inventory items",
+                            Group = "Dashboard",
+                            Key = "VIEW_MY_ASSIGNED_ITEMS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000005"),
+                            Description = "View manager dashboard summary",
+                            Group = "Dashboard",
+                            Key = "VIEW_MANAGER_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000006"),
+                            Description = "View department requisition statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_DEPARTMENT_REQUISITION_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000007"),
+                            Description = "View pending approval statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_PENDING_APPROVAL_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000008"),
+                            Description = "View department inventory statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_DEPARTMENT_INVENTORY_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000009"),
+                            Description = "View procurement dashboard summary",
+                            Group = "Dashboard",
+                            Key = "VIEW_PROCUREMENT_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000010"),
+                            Description = "View approved requisitions waiting for procurement",
+                            Group = "Dashboard",
+                            Key = "VIEW_PROCUREMENT_QUEUE_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000011"),
+                            Description = "View RFQ statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_RFQ_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000012"),
+                            Description = "View quotation statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_QUOTATION_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000013"),
+                            Description = "View purchase order statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_PURCHASE_ORDER_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000014"),
+                            Description = "View recent purchase orders on dashboard",
+                            Group = "Dashboard",
+                            Key = "VIEW_RECENT_PURCHASE_ORDERS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000015"),
+                            Description = "View today purchase order deliveries",
+                            Group = "Dashboard",
+                            Key = "VIEW_TODAY_DELIVERIES"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000016"),
+                            Description = "View inventory dashboard summary",
+                            Group = "Dashboard",
+                            Key = "VIEW_INVENTORY_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000017"),
+                            Description = "View stock statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_STOCK_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000018"),
+                            Description = "View low stock alerts",
+                            Group = "Dashboard",
+                            Key = "VIEW_LOW_STOCK_ALERTS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000019"),
+                            Description = "View inventory assignment statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_INVENTORY_ASSIGNMENT_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000020"),
+                            Description = "View purchase order receiving statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_RECEIVING_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000021"),
+                            Description = "View finance dashboard summary",
+                            Group = "Dashboard",
+                            Key = "VIEW_FINANCE_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000022"),
+                            Description = "View purchase cost statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_PURCHASE_COST_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000023"),
+                            Description = "View budget and department-wise procurement cost statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_BUDGET_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000024"),
+                            Description = "View executive dashboard summary",
+                            Group = "Dashboard",
+                            Key = "VIEW_EXECUTIVE_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000025"),
+                            Description = "View executive procurement statistics",
+                            Group = "Dashboard",
+                            Key = "VIEW_EXECUTIVE_PROCUREMENT_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000026"),
+                            Description = "View dashboard charts and analytics",
+                            Group = "Dashboard",
+                            Key = "VIEW_DASHBOARD_CHARTS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000027"),
+                            Description = "View dashboard alerts and risk indicators",
+                            Group = "Dashboard",
+                            Key = "VIEW_DASHBOARD_ALERTS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000028"),
+                            Description = "View admin dashboard summary",
+                            Group = "Dashboard",
+                            Key = "VIEW_ADMIN_DASHBOARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000029"),
+                            Description = "View system statistics including users, roles, permissions and departments",
+                            Group = "Dashboard",
+                            Key = "VIEW_SYSTEM_STATS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000030"),
+                            Description = "View dashboard reports",
+                            Group = "Dashboard",
+                            Key = "VIEW_DASHBOARD_REPORTS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000031"),
+                            Description = "Export dashboard reports",
+                            Group = "Dashboard",
+                            Key = "EXPORT_DASHBOARD_REPORTS"
+                        },
+                        new
+                        {
+                            Id = new Guid("14000000-0000-0000-0000-000000000032"),
+                            Description = "View dashboard quick actions",
+                            Group = "Dashboard",
+                            Key = "VIEW_DASHBOARD_QUICK_ACTIONS"
                         });
                 });
 
@@ -1420,6 +1684,9 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<int>("DeliveryDays")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("InventoryCategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("ItemName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1440,6 +1707,8 @@ namespace NexusProcure.Infrastructure.Migrations
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InventoryCategoryId");
 
                     b.HasIndex("QuotationId");
 
@@ -1589,14 +1858,20 @@ namespace NexusProcure.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("DepartmentId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsUrgent")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("RequestedById")
                         .HasColumnType("uuid");
@@ -1604,10 +1879,13 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<DateTime>("RequestedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("RequiredDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("RequisitionNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("RiskLevel")
                         .IsRequired()
@@ -1619,14 +1897,16 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasColumnType("numeric");
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
 
                     b.HasIndex("DepartmentId");
 
@@ -1634,6 +1914,8 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasIndex("RequisitionNumber")
                         .IsUnique();
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Requisitions");
                 });
@@ -1645,19 +1927,24 @@ namespace NexusProcure.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("EstimatedCost")
-                        .HasColumnType("numeric");
+                        .HasColumnType("numeric(18,2)");
 
-                    b.Property<string>("ItemName")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("InventoryStockId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("RequisitionId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InventoryStockId");
 
                     b.HasIndex("RequisitionId");
 
@@ -1962,6 +2249,166 @@ namespace NexusProcure.Infrastructure.Migrations
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("13000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000001")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000002")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000003")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000004")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000005")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000006")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000007")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000008")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000009")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000010")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000011")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000012")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000013")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000014")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000015")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000016")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000017")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000018")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000019")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000020")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000021")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000022")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000023")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000024")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000025")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000026")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000027")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000028")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000029")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000030")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000031")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
+                            PermissionId = new Guid("14000000-0000-0000-0000-000000000032")
                         });
                 });
 
@@ -1974,7 +2421,7 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
-                    b.Property<decimal>("MaxAmount")
+                    b.Property<decimal?>("MaxAmount")
                         .HasColumnType("numeric");
 
                     b.Property<decimal>("MinAmount")
@@ -2257,7 +2704,9 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasOne("NexusProcure.Core.Entities.Requisition", null)
                         .WithMany("Approvals")
-                        .HasForeignKey("RequisitionId");
+                        .HasForeignKey("ReferenceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("NexusProcure.Core.Entities.Role", "Role")
                         .WithMany()
@@ -2431,13 +2880,18 @@ namespace NexusProcure.Infrastructure.Migrations
 
                     b.HasOne("NexusProcure.Core.Entities.User", "CreatedBy")
                         .WithMany()
-                        .HasForeignKey("CreatedById");
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "InventoryCategory")
-                        .WithMany("Items")
+                        .WithMany()
                         .HasForeignKey("InventoryCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", null)
+                        .WithMany("Items")
+                        .HasForeignKey("InventoryCategoryId1");
 
                     b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryStock", "Stock")
                         .WithMany("Items")
@@ -2458,22 +2912,24 @@ namespace NexusProcure.Infrastructure.Migrations
                 {
                     b.HasOne("NexusProcure.Core.Entities.User", "ApprovedByManager")
                         .WithMany()
-                        .HasForeignKey("ApprovedByManagerId");
+                        .HasForeignKey("ApprovedByManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("NexusProcure.Core.Entities.Department", "Department")
                         .WithMany()
                         .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("NexusProcure.Core.Entities.User", "ProcessedByInventoryManager")
                         .WithMany()
-                        .HasForeignKey("ProcessedByInventoryManagerId");
+                        .HasForeignKey("ProcessedByInventoryManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("NexusProcure.Core.Entities.User", "RequestedBy")
                         .WithMany()
                         .HasForeignKey("RequestedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ApprovedByManager");
@@ -2515,7 +2971,7 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryStock", "Stock")
                         .WithMany()
                         .HasForeignKey("StockId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("InventoryRequest");
@@ -2526,14 +2982,18 @@ namespace NexusProcure.Infrastructure.Migrations
             modelBuilder.Entity("NexusProcure.Core.Entities.Inventory.InventoryStock", b =>
                 {
                     b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
-                        .WithMany("Stocks")
+                        .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("NexusProcure.Core.Entities.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
+
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", null)
+                        .WithMany("Stocks")
+                        .HasForeignKey("InventoryCategoryId");
 
                     b.Navigation("Category");
 
@@ -2598,7 +3058,7 @@ namespace NexusProcure.Infrastructure.Migrations
                     b.HasOne("NexusProcure.Core.Entities.Requisition", "Requisition")
                         .WithMany("PurchaseOrders")
                         .HasForeignKey("RequisitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("NexusProcure.Core.Entities.Vendor", "Vendor")
@@ -2652,11 +3112,17 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.RequestForQuotations.QuotationItem", b =>
                 {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "InventoryCategory")
+                        .WithMany()
+                        .HasForeignKey("InventoryCategoryId");
+
                     b.HasOne("NexusProcure.Core.Entities.RequestForQuotations.Quotation", "Quotation")
                         .WithMany("Items")
                         .HasForeignKey("QuotationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("InventoryCategory");
 
                     b.Navigation("Quotation");
                 });
@@ -2723,34 +3189,38 @@ namespace NexusProcure.Infrastructure.Migrations
 
             modelBuilder.Entity("NexusProcure.Core.Entities.Requisition", b =>
                 {
-                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryCategory", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("NexusProcure.Core.Entities.Department", null)
                         .WithMany("Requisitions")
                         .HasForeignKey("DepartmentId");
 
                     b.HasOne("NexusProcure.Core.Entities.User", "RequestedBy")
-                        .WithMany("Requisitions")
+                        .WithMany()
                         .HasForeignKey("RequestedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Category");
+                    b.HasOne("NexusProcure.Core.Entities.User", null)
+                        .WithMany("Requisitions")
+                        .HasForeignKey("UserId");
 
                     b.Navigation("RequestedBy");
                 });
 
             modelBuilder.Entity("NexusProcure.Core.Entities.RequisitionItem", b =>
                 {
+                    b.HasOne("NexusProcure.Core.Entities.Inventory.InventoryStock", "InventoryStock")
+                        .WithMany()
+                        .HasForeignKey("InventoryStockId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("NexusProcure.Core.Entities.Requisition", "Requisition")
                         .WithMany("Items")
                         .HasForeignKey("RequisitionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("InventoryStock");
 
                     b.Navigation("Requisition");
                 });

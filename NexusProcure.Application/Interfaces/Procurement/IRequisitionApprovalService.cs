@@ -20,5 +20,7 @@ public interface IRequisitionApprovalService
     Task ApproveAsync(Guid referenceId, Guid approverId, string decision, string comments, ApprovalReferenceType referenceType);
 
     Task<List<QuotationApprovalListResponseDto>> GetPendingQuotationApprovalsForRoleAsync(Guid userId);
+    
+    Task ApproveQuoatationAsync(Guid quotationId, Guid approverId, string decision, string comments, ApprovalReferenceType referenceType);
 
 }

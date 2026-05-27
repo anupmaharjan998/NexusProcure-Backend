@@ -1,10 +1,9 @@
-﻿using AutoMapper;
-using Hangfire;
+﻿using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Application.Interfaces.BackgroundJobs;
-using NexusProcure.Application.Interfaces.Helper;
 using NexusProcure.Application.Interfaces.Procurement;
+using NexusProcure.Core.DTOs;
 using NexusProcure.Core.DTOs.Procurement;
 using NexusProcure.Core.Entities;
 using NexusProcure.Core.Enums;
@@ -15,131 +14,161 @@ namespace NexusProcure.Application.Services.Procurement;
 public class RequisitionService : IRequisitionService
 {
     private readonly NexusProcureDbContext _context;
-    private readonly IMapper _mapper;
     private readonly IRiskScoringService _riskScoringService;
     private readonly IApprovalPolicyService _approvalPolicyService;
-    private readonly IRequisitionNumberGenerator _requisitionNumberGenerator;
-    private readonly IEmailService _emailService;
 
-    public RequisitionService(NexusProcureDbContext context, IMapper mapper, IRiskScoringService riskScoringService,
-        IApprovalPolicyService approvalPolicyService, IRequisitionNumberGenerator requisitionNumberGenerator,
-        IEmailService emailService)
+    public RequisitionService(
+        NexusProcureDbContext context,
+        IRiskScoringService riskScoringService, IApprovalPolicyService approvalPolicyService)
     {
         _context = context;
-        _mapper = mapper;
         _riskScoringService = riskScoringService;
         _approvalPolicyService = approvalPolicyService;
-        _requisitionNumberGenerator = requisitionNumberGenerator;
-        _emailService = emailService;
     }
 
     public async Task<IEnumerable<RequisitionResponseDto>> GetAllAsync()
     {
-        var requisitions = await _context.Requisitions
-            .Include(r => r.RequestedBy)
-            .Include(r => r.Items)
-            .Include(r => r.Approvals)
-            .Include(r => r.Category)
-            .Include(r => r.PurchaseOrders)
-            .ThenInclude(po => po.Items)
-            .OrderByDescending(r => r.RequisitionNumber)
+        var requisitions = await BaseQuery()
+            .OrderByDescending(x => x.RequestedDate)
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<RequisitionResponseDto>>(requisitions);
+        return requisitions.Select(MapToResponseDto).ToList();
     }
 
     public async Task<RequisitionResponseDto> GetByIdAsync(Guid id)
     {
-        var requisition = await _context.Requisitions
-            .Include(r => r.RequestedBy)
-            .Include(r => r.Items)
-            .Include(r => r.Approvals)
-                .ThenInclude(a => a.ApprovedBy)
-                    .ThenInclude(u => u.Role)
-            .Include(r => r.PurchaseOrders)
-            .FirstOrDefaultAsync(r => r.Id == id);
+        var requisition = await BaseQuery()
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (requisition == null)
-            throw new KeyNotFoundException("Requisition not found");
+        {
+            throw new InvalidOperationException("Requisition not found.");
+        }
 
-
-        return _mapper.Map<RequisitionResponseDto>(requisition);
+        return MapToResponseDto(requisition);
     }
 
-    public async Task<RequisitionResponseDto> CreateAsync(RequisitionCreateDto dto)
+     public async Task<RequisitionResponseDto> CreateAsync(RequisitionCreateDto dto)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
         {
+            if (dto.RequestedById == Guid.Empty)
+            {
+                throw new InvalidOperationException("Requested by user is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Purpose))
+            {
+                throw new InvalidOperationException("Purpose is required.");
+            }
+
+            if (dto.Items == null || !dto.Items.Any())
+            {
+                throw new InvalidOperationException("At least one requisition item is required.");
+            }
+
+            var requestedByExists = await _context.Users
+                .AnyAsync(u => u.Id == dto.RequestedById);
+
+            if (!requestedByExists)
+            {
+                throw new InvalidOperationException("Requested by user not found.");
+            }
+
+            var duplicateStockIds = dto.Items
+                .GroupBy(i => i.InventoryStockId)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            if (duplicateStockIds.Any())
+            {
+                throw new InvalidOperationException(
+                    "Duplicate inventory stock items are not allowed. Increase quantity instead.");
+            }
+
+            var stockIds = dto.Items
+                .Select(i => i.InventoryStockId)
+                .Distinct()
+                .ToList();
+
+            if (stockIds.Any(id => id == Guid.Empty))
+            {
+                throw new InvalidOperationException("Inventory stock is required for all items.");
+            }
+
+            var stocks = await _context.InventoryStocks
+                .Include(s => s.Category)
+                .Where(s => stockIds.Contains(s.Id))
+                .ToListAsync();
+
+            if (stocks.Count != stockIds.Count)
+            {
+                throw new InvalidOperationException("One or more inventory stock items were not found.");
+            }
+
             var requisition = new Requisition
             {
                 Id = Guid.NewGuid(),
-                RequisitionNumber = await _requisitionNumberGenerator.GenerateRequisitionNumberAsync(),
+                RequisitionNumber = await GenerateRequisitionNumberAsync(),
                 RequestedById = dto.RequestedById,
                 RequestedDate = DateTime.UtcNow,
+                RequiredDate = dto.RequiredDate,
                 Status = "Pending",
-                CategoryId = dto.CategoryId,
                 IsUrgent = dto.IsUrgent,
-                Items = dto.Items.Select(item => new RequisitionItem
+                Purpose = dto.Purpose.Trim(),
+                Notes = dto.Notes?.Trim(),
+                RiskScore = 0,
+                RiskLevel = RiskLevel.Low,
+                TotalAmount = 0
+            };
+
+            foreach (var itemDto in dto.Items)
+            {
+                if (itemDto.Quantity <= 0)
+                {
+                    throw new InvalidOperationException("Quantity must be greater than zero.");
+                }
+
+                if (itemDto.EstimatedCost < 0)
+                {
+                    throw new InvalidOperationException("Estimated cost cannot be negative.");
+                }
+
+                var stock = stocks.First(s => s.Id == itemDto.InventoryStockId);
+
+                var requisitionItem = new RequisitionItem
                 {
                     Id = Guid.NewGuid(),
-                    ItemName = item.ItemName,
-                    Quantity = item.Quantity,
-                    EstimatedCost = item.EstimatedCost
-                }).ToList(),
-            };
-            decimal totalAmount = 0;
+                    RequisitionId = requisition.Id,
+                    InventoryStockId = stock.Id,
+                    InventoryStock = stock,
+                    Quantity = itemDto.Quantity,
+                    EstimatedCost = itemDto.EstimatedCost,
+                    Remarks = itemDto.Remarks?.Trim()
+                };
 
-            foreach (var item in dto.Items)
-            {
-                totalAmount += item.Quantity * item.EstimatedCost;
+                requisition.Items.Add(requisitionItem);
+
+                requisition.TotalAmount += itemDto.Quantity * itemDto.EstimatedCost;
             }
 
-            requisition.TotalAmount = totalAmount;
-
-            // 🔹 Risk scoring
             var riskScore = await _riskScoringService.CalculateRiskScoreAsync(requisition);
             requisition.RiskScore = riskScore;
-            //requisition.RiskLevel = _riskScoringService.ResolveRiskLevel(riskScore);
-            requisition.RiskLevel = riskScore switch
+            requisition.RiskLevel = _riskScoringService.ResolveRiskLevel(riskScore);
+
+            _context.Requisitions.Add(requisition);
+
+            var approvalLevels = await _approvalPolicyService.ResolveApprovalFlowAsync(requisition);
+
+            if (approvalLevels == null || !approvalLevels.Any())
             {
-                >= 70 => RiskLevel.Critical,
-                >= 50 => RiskLevel.High,
-                >= 30 => RiskLevel.Medium,
-                _ => RiskLevel.Low
-            };
+                throw new InvalidOperationException("No approval policy configured.");
+            }
 
-            await _context.Requisitions.AddAsync(requisition);
-            await _context.SaveChangesAsync();
-
-            // 🔹 Resolve approval flow
-            var approvalLevels =
-                await _approvalPolicyService.ResolveApprovalFlowAsync(requisition);
-
-            if (!approvalLevels.Any())
-                throw new InvalidOperationException("No approval policy configured");
-
-            var firstLevel = approvalLevels.First();
-
-            // 🔹 Assign first approver (role → user)
-            // var approverUserId = await _context.Users
-            //     .Where(u => u.RoleId == firstLevel.Id)
-            //     .Select(u => u.Id)
-            //     .FirstOrDefaultAsync();
-            //
-            // if (approverUserId == Guid.Empty)
-            //     throw new InvalidOperationException("No approver found for role");
-            //
-            // var approval = new Approval
-            // {
-            //     Id = Guid.NewGuid(),
-            //     RequisitionId = requisition.Id,
-            //     RoleId = firstLevel.Id,
-            //     AssignedToUserId = approverUserId,
-            //     AssignedAt = DateTime.UtcNow,
-            //     Status = "Pending"
-            // };
+            var firstSequenceOrder = approvalLevels.Min(a => a.SequenceOrder);
 
             foreach (var step in approvalLevels)
             {
@@ -151,20 +180,19 @@ public class RequisitionService : IRequisitionService
                     RoleId = step.RoleId,
                     Status = "Pending",
                     SequenceOrder = step.SequenceOrder,
-                    IsActive = step.SequenceOrder == 1,
-                    AssignedAt = DateTime.UtcNow
+                    IsActive = step.SequenceOrder == firstSequenceOrder,
+                    AssignedAt = DateTime.UtcNow,
+                    Escalated = false
                 });
             }
-            
-            //await _context.Approvals.AddAsync(approval);
+
             await _context.SaveChangesAsync();
-
             await transaction.CommitAsync();
-            
-            // Queue email with Hangfire
-            BackgroundJob.Enqueue<IEmailJobService>(job => job.SendApprovalNotificationAsync(requisition.Id));
 
-            return _mapper.Map<RequisitionResponseDto>(requisition);
+            BackgroundJob.Enqueue<IEmailJobService>(
+                job => job.SendApprovalNotificationAsync(requisition.Id));
+
+            return await GetByIdAsync(requisition.Id);
         }
         catch
         {
@@ -173,70 +201,139 @@ public class RequisitionService : IRequisitionService
         }
     }
 
-
-    public async Task<RequisitionResponseDto> ApproveAsync(Guid requisitionId, Guid approvedById, string comments)
+    public async Task<RequisitionResponseDto> ApproveAsync(
+        Guid requisitionId,
+        Guid approvedById,
+        string comments)
     {
         var requisition = await _context.Requisitions
-            .Include(r => r.Items)
-            .Include(r => r.Approvals)
-            .Include(r => r.PurchaseOrders)
-            .FirstOrDefaultAsync(r => r.Id == requisitionId);
+            .FirstOrDefaultAsync(x => x.Id == requisitionId);
 
         if (requisition == null)
-            throw new KeyNotFoundException("Requisition not found.");
+        {
+            throw new InvalidOperationException("Requisition not found.");
+        }
 
         if (requisition.Status != "Pending")
-            throw new InvalidOperationException("Only pending requisitions can be approved");
-
-        var approval = new Approval
         {
-            Id = Guid.NewGuid(),
-            ReferenceId = requisition.Id,
-            ReferenceType = ApprovalReferenceType.Requisition,
-            ApprovedById = approvedById,
-            Comments = comments
-        };
+            throw new InvalidOperationException("Only pending requisitions can be approved.");
+        }
 
         requisition.Status = "Approved";
-        requisition.Approvals.Add(approval);
 
         await _context.SaveChangesAsync();
 
-        return _mapper.Map<RequisitionResponseDto>(requisition);
+        return await GetByIdAsync(requisitionId);
     }
 
-
-    public async Task<RequisitionResponseDto> RejectAsync(Guid requisitionId, Guid rejectedById, string comments)
+    public async Task<RequisitionResponseDto> RejectAsync(
+        Guid requisitionId,
+        Guid rejectedById,
+        string comments)
     {
-        // Fetch requisition with related data
         var requisition = await _context.Requisitions
-            .Include(r => r.Items)
-            .Include(r => r.Approvals)
-            .Include(r => r.PurchaseOrders)
-            .FirstOrDefaultAsync(r => r.Id == requisitionId);
+            .FirstOrDefaultAsync(x => x.Id == requisitionId);
 
         if (requisition == null)
-            throw new KeyNotFoundException("Requisition not found.");
+        {
+            throw new InvalidOperationException("Requisition not found.");
+        }
 
         if (requisition.Status != "Pending")
-            throw new InvalidOperationException("Only pending requisitions can be rejected");
-
-        var approval = new Approval
         {
-            Id = Guid.NewGuid(),
-            ReferenceId = requisition.Id,
-            ReferenceType = ApprovalReferenceType.Requisition,
-            ApprovedById = rejectedById,
-            Comments = comments
-        };
+            throw new InvalidOperationException("Only pending requisitions can be rejected.");
+        }
 
         requisition.Status = "Rejected";
-        requisition.Approvals.Add(approval);
 
         await _context.SaveChangesAsync();
 
-        // Map the updated requisition to DTO
-        var requisitionDto = _mapper.Map<RequisitionResponseDto>(requisition);
-        return requisitionDto;
+        return await GetByIdAsync(requisitionId);
+    }
+
+    private IQueryable<Requisition> BaseQuery()
+    {
+        return _context.Requisitions
+            .Include(x => x.RequestedBy)
+            .Include(x => x.Items)
+                .ThenInclude(i => i.InventoryStock)
+                    .ThenInclude(s => s.Category)
+            .Include(x => x.Approvals)
+                .ThenInclude(a => a.ApprovedBy)
+            .AsNoTracking();
+    }
+
+    private RequisitionResponseDto MapToResponseDto(Requisition requisition)
+    {
+        var categoryNames = requisition.Items
+            .Where(x => x.InventoryStock?.Category != null)
+            .Select(x => x.InventoryStock.Category.Name)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToList();
+
+        var categoryName = categoryNames.Count switch
+        {
+            0 => "-",
+            1 => categoryNames[0],
+            _ => "Mixed"
+        };
+
+        return new RequisitionResponseDto
+        {
+            Id = requisition.Id,
+            RequisitionNumber = requisition.RequisitionNumber,
+            RequestedById = requisition.RequestedById,
+            RequestedByName = requisition.RequestedBy.FullName,
+            RequestedBy = new UserResponseDto
+            {
+                Id = requisition.RequestedBy.Id,
+                FullName = requisition.RequestedBy.FullName,
+                Email = requisition.RequestedBy.Email
+            },
+            RequestedDate = requisition.RequestedDate,
+            RequiredDate = requisition.RequiredDate,
+            Status = requisition.Status,
+            IsUrgent = requisition.IsUrgent,
+            Purpose = requisition.Purpose,
+            Notes = requisition.Notes,
+            TotalAmount = requisition.TotalAmount,
+            RiskScore = requisition.RiskScore,
+            RiskLevel = requisition.RiskLevel.ToString(),
+            CategoryName = categoryName,
+            Items = requisition.Items.Select(item => new RequisitionItemDto
+            {
+                Id = item.Id,
+                RequisitionId = item.RequisitionId,
+                InventoryStockId = item.InventoryStockId,
+                ItemName = item.InventoryStock.Name,
+                SKU = item.InventoryStock.SKU,
+                CategoryName = item.InventoryStock.Category.Name,
+                Quantity = item.Quantity,
+                Unit = item.InventoryStock.Unit,
+                EstimatedCost = item.EstimatedCost,
+                LineTotal = item.Quantity * item.EstimatedCost,
+                Remarks = item.Remarks
+            }).ToList(),
+            Approvals = requisition.Approvals?.Select(a => new ApprovalDto
+            {
+                Id = a.Id,
+                Status = a.Status,
+                Comments = a.Comments,
+                ApprovedById = a.ApprovedById,
+                ApprovedByName = a.ApprovedBy != null ? a.ApprovedBy.FullName : null,
+                ActionedAt = a.ActionedAt
+            }).ToList() ?? new List<ApprovalDto>()
+        };
+    }
+
+    private async Task<string> GenerateRequisitionNumberAsync()
+    {
+        var year = DateTime.UtcNow.Year;
+
+        var count = await _context.Requisitions
+            .CountAsync(x => x.RequestedDate.Year == year);
+
+        return $"REQ-{year}-{count + 1:D5}";
     }
 }

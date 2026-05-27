@@ -81,6 +81,57 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 // ------------------ Delegation ------------------
                 new Permission { Id = Guid.Parse("13000000-0000-0000-0000-000000000001"), Group = "Delegation", Key = "MANAGE_DELEGATION", Description = "Manage all user delegations" },
                 new Permission { Id = Guid.Parse("13000000-0000-0000-0000-000000000002"), Group = "Delegation", Key = "DELEGATION", Description = "Create and manage own delegation" },
+                
+                
+                // ------------------ Dashboard ------------------
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000001"), Group = "Dashboard", Key = "VIEW_DASHBOARD", Description = "View dashboard" },
+
+                // Employee dashboard
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000002"), Group = "Dashboard", Key = "VIEW_EMPLOYEE_DASHBOARD", Description = "View employee dashboard summary" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000003"), Group = "Dashboard", Key = "VIEW_MY_REQUISITION_STATS", Description = "View own requisition statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000004"), Group = "Dashboard", Key = "VIEW_MY_ASSIGNED_ITEMS", Description = "View own assigned inventory items" },
+
+                // Manager dashboard
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000005"), Group = "Dashboard", Key = "VIEW_MANAGER_DASHBOARD", Description = "View manager dashboard summary" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000006"), Group = "Dashboard", Key = "VIEW_DEPARTMENT_REQUISITION_STATS", Description = "View department requisition statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000007"), Group = "Dashboard", Key = "VIEW_PENDING_APPROVAL_STATS", Description = "View pending approval statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000008"), Group = "Dashboard", Key = "VIEW_DEPARTMENT_INVENTORY_STATS", Description = "View department inventory statistics" },
+
+                // Procurement dashboard
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000009"), Group = "Dashboard", Key = "VIEW_PROCUREMENT_DASHBOARD", Description = "View procurement dashboard summary" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000010"), Group = "Dashboard", Key = "VIEW_PROCUREMENT_QUEUE_STATS", Description = "View approved requisitions waiting for procurement" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000011"), Group = "Dashboard", Key = "VIEW_RFQ_STATS", Description = "View RFQ statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000012"), Group = "Dashboard", Key = "VIEW_QUOTATION_STATS", Description = "View quotation statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000013"), Group = "Dashboard", Key = "VIEW_PURCHASE_ORDER_STATS", Description = "View purchase order statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000014"), Group = "Dashboard", Key = "VIEW_RECENT_PURCHASE_ORDERS", Description = "View recent purchase orders on dashboard" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000015"), Group = "Dashboard", Key = "VIEW_TODAY_DELIVERIES", Description = "View today purchase order deliveries" },
+
+                // Inventory dashboard
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000016"), Group = "Dashboard", Key = "VIEW_INVENTORY_DASHBOARD", Description = "View inventory dashboard summary" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000017"), Group = "Dashboard", Key = "VIEW_STOCK_STATS", Description = "View stock statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000018"), Group = "Dashboard", Key = "VIEW_LOW_STOCK_ALERTS", Description = "View low stock alerts" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000019"), Group = "Dashboard", Key = "VIEW_INVENTORY_ASSIGNMENT_STATS", Description = "View inventory assignment statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000020"), Group = "Dashboard", Key = "VIEW_RECEIVING_STATS", Description = "View purchase order receiving statistics" },
+
+                // Finance dashboard
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000021"), Group = "Dashboard", Key = "VIEW_FINANCE_DASHBOARD", Description = "View finance dashboard summary" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000022"), Group = "Dashboard", Key = "VIEW_PURCHASE_COST_STATS", Description = "View purchase cost statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000023"), Group = "Dashboard", Key = "VIEW_BUDGET_STATS", Description = "View budget and department-wise procurement cost statistics" },
+
+                // CEO / Executive dashboard
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000024"), Group = "Dashboard", Key = "VIEW_EXECUTIVE_DASHBOARD", Description = "View executive dashboard summary" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000025"), Group = "Dashboard", Key = "VIEW_EXECUTIVE_PROCUREMENT_STATS", Description = "View executive procurement statistics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000026"), Group = "Dashboard", Key = "VIEW_DASHBOARD_CHARTS", Description = "View dashboard charts and analytics" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000027"), Group = "Dashboard", Key = "VIEW_DASHBOARD_ALERTS", Description = "View dashboard alerts and risk indicators" },
+
+                // Admin dashboard
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000028"), Group = "Dashboard", Key = "VIEW_ADMIN_DASHBOARD", Description = "View admin dashboard summary" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000029"), Group = "Dashboard", Key = "VIEW_SYSTEM_STATS", Description = "View system statistics including users, roles, permissions and departments" },
+
+                // Dashboard reports / actions
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000030"), Group = "Dashboard", Key = "VIEW_DASHBOARD_REPORTS", Description = "View dashboard reports" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000031"), Group = "Dashboard", Key = "EXPORT_DASHBOARD_REPORTS", Description = "Export dashboard reports" },
+                new Permission { Id = Guid.Parse("14000000-0000-0000-0000-000000000032"), Group = "Dashboard", Key = "VIEW_DASHBOARD_QUICK_ACTIONS", Description = "View dashboard quick actions" },
 
             };
 

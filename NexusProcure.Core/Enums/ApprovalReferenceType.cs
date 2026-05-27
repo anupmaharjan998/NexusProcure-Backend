@@ -9,4 +9,7 @@ public enum ApprovalReferenceType
     
     [Display(Name = "RFQ")]
     RFQ = 1,
+    
+    [Display(Name = "Purchase Order")]
+    PurchaseOrder = 2,
 }

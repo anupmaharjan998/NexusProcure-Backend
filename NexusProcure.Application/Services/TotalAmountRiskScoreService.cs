@@ -6,7 +6,6 @@ using NexusProcure.Infrastructure.Data;
 
 namespace NexusProcure.Application.Services;
 
-
 public class TotalAmountRiskScoreService : ITotalAmountRiskScoreService
 {
     private readonly NexusProcureDbContext _context;
@@ -50,11 +49,9 @@ public class TotalAmountRiskScoreService : ITotalAmountRiskScoreService
 
     public async Task<Guid> CreateAsync(TotalAmountRiskScoreDto dto)
     {
-        // Optional validation: overlapping ranges
-        var overlapExists = await _context.TotalAmountRiskScores.AnyAsync(r =>
-            r.IsActive &&
-            dto.MinAmount <= r.MaxAmount &&
-            dto.MaxAmount >= r.MinAmount);
+        ValidateRange(dto);
+
+        var overlapExists = await HasOverlapAsync(dto.MinAmount, dto.MaxAmount, null);
 
         if (overlapExists)
             throw new InvalidOperationException("Overlapping amount range detected");
@@ -76,10 +73,17 @@ public class TotalAmountRiskScoreService : ITotalAmountRiskScoreService
 
     public async Task UpdateAsync(Guid id, TotalAmountRiskScoreDto dto)
     {
+        ValidateRange(dto);
+
         var entity = await _context.TotalAmountRiskScores.FindAsync(id);
 
         if (entity == null)
             throw new KeyNotFoundException("Risk score rule not found");
+
+        var overlapExists = await HasOverlapAsync(dto.MinAmount, dto.MaxAmount, id);
+
+        if (overlapExists)
+            throw new InvalidOperationException("Overlapping amount range detected");
 
         entity.MinAmount = dto.MinAmount;
         entity.MaxAmount = dto.MaxAmount;
@@ -98,5 +102,31 @@ public class TotalAmountRiskScoreService : ITotalAmountRiskScoreService
 
         _context.TotalAmountRiskScores.Remove(entity);
         await _context.SaveChangesAsync();
+    }
+
+    private static void ValidateRange(TotalAmountRiskScoreDto dto)
+    {
+        if (dto.MinAmount < 0)
+            throw new InvalidOperationException("Minimum amount cannot be negative");
+
+        if (dto.MaxAmount.HasValue && dto.MaxAmount.Value <= dto.MinAmount)
+            throw new InvalidOperationException("Maximum amount must be greater than minimum amount");
+
+        if (dto.RiskPoints < 0)
+            throw new InvalidOperationException("Risk points cannot be negative");
+    }
+
+    private async Task<bool> HasOverlapAsync(
+        decimal newMin,
+        decimal? newMax,
+        Guid? excludeId)
+    {
+        return await _context.TotalAmountRiskScores
+            .Where(r => r.IsActive)
+            .Where(r => excludeId == null || r.Id != excludeId.Value)
+            .AnyAsync(r =>
+                newMin < (r.MaxAmount ?? decimal.MaxValue) &&
+                (newMax ?? decimal.MaxValue) > r.MinAmount
+            );
     }
 }

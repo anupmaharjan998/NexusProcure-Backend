@@ -81,16 +81,16 @@ namespace NexusProcure.Application.Services.Procurement
 
         public async Task<List<QuotationApprovalListResponseDto>> GetPendingQuotationApprovalsForRoleAsync(Guid userId)
         {
-            var user = await _context.Users
-                .Include(x => x.Role)
-                .FirstOrDefaultAsync(x => x.Id == userId);
+            var userExists = await _context.Users
+                .AnyAsync(x => x.Id == userId);
 
-            if (user == null)
+            if (!userExists)
                 throw new Exception("User not found");
 
             var effectiveRoleIds = await GetEffectiveApprovalRoleIdsAsync(userId);
 
-            var approvalReferenceIds = await _context.Approvals
+            // ReferenceId contains RequisitionId
+            var pendingRequisitionIds = await _context.Approvals
                 .Where(a =>
                     a.Status == "Pending" &&
                     a.IsActive &&
@@ -100,14 +100,42 @@ namespace NexusProcure.Application.Services.Procurement
                 .Distinct()
                 .ToListAsync();
 
+            if (!pendingRequisitionIds.Any())
+                return new List<QuotationApprovalListResponseDto>();
+
+            // Find RFQs created for those requisitions
+            var pendingRfqIds = await _context.RequestForQuotations
+                .Where(rfq => pendingRequisitionIds.Contains(rfq.RequisitionId))
+                .Select(rfq => rfq.Id)
+                .Distinct()
+                .ToListAsync();
+
+            if (!pendingRfqIds.Any())
+                return new List<QuotationApprovalListResponseDto>();
+
+            // Find selected quotations of those RFQs
             var quotations = await _context.Quotations
+                .AsNoTracking()
                 .Include(q => q.RequestForQuotation)
+                .ThenInclude(rfq => rfq.Requisition)
                 .Include(q => q.RfqVendor)
-                    .ThenInclude(rv => rv.Vendor)
-                .Where(q => approvalReferenceIds.Contains(q.RfqId) && q.IsSelected)
+                .ThenInclude(rv => rv.Vendor)
+                .Include(q => q.Items)
+                .Where(q =>
+                    pendingRfqIds.Contains(q.RfqId) &&
+                    q.IsSelected)
+                .OrderByDescending(q => q.SubmittedAt)
                 .ToListAsync();
 
             return _mapper.Map<List<QuotationApprovalListResponseDto>>(quotations);
+        }
+
+        public Task ApproveQuoatationAsync(Guid quotationId, Guid approverId, string decision, string comments,
+            ApprovalReferenceType referenceType)
+        {
+            var rfqId = _context.Quotations.Where(q => q.Id == quotationId).Select(q => q.RfqId).FirstOrDefault();
+            var requisitionId = _context.RequestForQuotations.Where(r => r.Id == rfqId).Select(r => r.RequisitionId).FirstOrDefault();
+            return ApproveAsync(requisitionId, approverId, decision, comments, referenceType);
         }
 
         public async Task ApproveAsync(
@@ -135,6 +163,11 @@ namespace NexusProcure.Application.Services.Procurement
 
                 var effectiveRoleIds = await GetEffectiveApprovalRoleIdsAsync(approverId);
 
+                if (referenceType == ApprovalReferenceType.RFQ)
+                {
+                    var rfqId = _context.Quotations.Where(q => q.Id == referenceId).Select(q => q.RfqId).FirstOrDefault();
+                    referenceId = _context.RequestForQuotations.Where(r => r.Id == rfqId).Select(r => r.RequisitionId).FirstOrDefault();
+                }
                 var approval = await _context.Approvals
                     .FirstOrDefaultAsync(a =>
                         a.ReferenceId == referenceId &&
@@ -178,10 +211,9 @@ namespace NexusProcure.Application.Services.Procurement
                         a.ReferenceId == referenceId &&
                         a.ReferenceType == referenceType &&
                         a.SequenceOrder == approval.SequenceOrder &&
-                        a.Status == "Pending" &&
-                        a.IsActive);
+                        a.Status == "Pending");
 
-                    if (currentStepCompleted)
+                    if (!currentStepCompleted)
                     {
                         var nextStep = approval.SequenceOrder + 1;
 
@@ -254,11 +286,11 @@ namespace NexusProcure.Application.Services.Procurement
 
             // Add your RFQ/Purchase Request background job here if you already have one.
             // Example:
-            // if (createPurchaseRequest)
-            // {
-            //     BackgroundJob.Enqueue<IPurchaseRequestJob>(
-            //         job => job.CreateFromApprovedQuotationAsync(referenceId));
-            // }
+            if (createPurchaseRequest)
+            {
+                BackgroundJob.Enqueue<IPurchaseRequestJob>(
+                    job => job.CreatePurchaseRequestAsync(referenceId));
+            }
         }
 
         private async Task<List<Guid>> GetEffectiveApprovalRoleIdsAsync(Guid userId)
@@ -382,7 +414,7 @@ namespace NexusProcure.Application.Services.Procurement
             if (referenceType == ApprovalReferenceType.RFQ)
             {
                 var rfq = await _context.RequestForQuotations
-                    .FirstOrDefaultAsync(x => x.Id == referenceId);
+                    .FirstOrDefaultAsync(x => x.RequisitionId == referenceId);
 
                 if (rfq == null)
                     throw new Exception("RFQ not found");

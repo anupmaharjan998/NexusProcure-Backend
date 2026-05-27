@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces.Inventory;
 using NexusProcure.Core.DTOs.Inventory;
+using NexusProcure.Core.DTOs.PurchaseOrder;
 
 namespace NexusProcure.Api.Controllers;
 
@@ -23,14 +24,15 @@ public class PurchaseOrderReceiptController : BaseApiController
             return BadRequest("Purchase order mismatch.");
 
         var userIdClaim = User.FindFirstValue("userId");
+
         if (!Guid.TryParse(userIdClaim, out var userId))
             return Unauthorized("User id missing.");
 
         var result = await _purchaseOrderReceiptService.ReceivePurchaseOrderAsync(dto, userId);
+
         return Ok(result);
     }
-    
-    
+
     [HttpGet("today")]
     public async Task<IActionResult> GetTodayDeliveries(
         [FromQuery] string? search,
@@ -53,22 +55,27 @@ public class PurchaseOrderReceiptController : BaseApiController
         var result = await _purchaseOrderReceiptService
             .GetReceivingDeliveryByPurchaseOrderIdAsync(purchaseOrderId);
 
-        if (result == null) return NotFound();
+        if (result == null)
+            return NotFound();
 
         return Ok(result);
     }
 
     [HttpPut("{purchaseOrderId:guid}/delivery-date")]
-    public async Task<IActionResult> UpdateDeliveryDate(Guid purchaseOrderId, [FromBody] DateTime newArrivalDate)
+    public async Task<IActionResult> UpdateDeliveryDate(
+        Guid purchaseOrderId,
+        [FromBody] UpdatePurchaseOrderArrivalDateDto dto)
     {
-        var updated = await _purchaseOrderReceiptService.ChangeArrivalDate(purchaseOrderId, newArrivalDate);
+        var updated = await _purchaseOrderReceiptService.ChangeArrivalDate(
+            purchaseOrderId,
+            dto.NewArrivalDate);
 
         if (!updated)
             return NotFound("Purchase Order not found.");
 
-        return Ok("Delivery date updated successfully.");
+        return Ok(new
+        {
+            message = "Delivery date updated successfully."
+        });
     }
-    
-    
-    
 }

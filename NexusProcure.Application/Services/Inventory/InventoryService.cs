@@ -142,82 +142,82 @@ public class InventoryService : IInventoryService
     // LEGACY-COMPATIBLE REQUISITION ASSIGN, NOW USING NEW FLOW
     // ============================================================
 
-    public async Task AssignToUserAsync(Guid requisitionId, Guid assignedBy)
-    {
-        await using var tx = await _context.Database.BeginTransactionAsync();
-
-        var req = await _context.Requisitions
-            .Include(r => r.Items)
-            .Include(r => r.RequestedBy)
-            .FirstOrDefaultAsync(r => r.Id == requisitionId);
-
-        if (req == null)
-            throw new Exception("Requisition not found.");
-
-        if (req.RequestedBy == null)
-            throw new Exception("Requested user not found.");
-
-        foreach (var reqItem in req.Items)
-        {
-            var stock = await _context.InventoryStocks
-                .Include(x => x.Category)
-                .FirstOrDefaultAsync(x => x.Name == reqItem.ItemName);
-
-            if (stock == null)
-                throw new Exception($"Stock not found for {reqItem.ItemName}.");
-
-            if (stock.QuantityAvailable < reqItem.Quantity)
-                throw new Exception($"Insufficient stock for {stock.Name}.");
-
-            if (stock.Category.IsAssetTracked)
-            {
-                var availableAssets = await _context.InventoryItems
-                    .Where(x =>
-                        x.StockId == stock.Id &&
-                        x.Status == InventoryItemStatus.Available)
-                    .Take(reqItem.Quantity)
-                    .ToListAsync();
-
-                if (availableAssets.Count < reqItem.Quantity)
-                    throw new Exception($"Not enough available assets for {stock.Name}.");
-
-                foreach (var asset in availableAssets)
-                {
-                    asset.Status = InventoryItemStatus.Assigned;
-                    asset.AssignedToId = req.RequestedBy.Id;
-                    asset.AssignedDate = DateTime.UtcNow;
-
-                    _context.InventoryAssignmentHistories.Add(new InventoryAssignmentHistory
-                    {
-                        Id = Guid.NewGuid(),
-                        InventoryItemId = asset.Id,
-                        AssignedToId = req.RequestedBy.Id,
-                        AssignedDate = DateTime.UtcNow,
-                        ActionType = "ASSIGNED",
-                        PerformedById = assignedBy,
-                        Notes = $"Assigned from requisition {req.Id}"
-                    });
-                }
-            }
-
-            stock.QuantityAvailable -= reqItem.Quantity;
-
-            _context.InventoryTransactions.Add(new InventoryTransaction
-            {
-                Id = Guid.NewGuid(),
-                StockId = stock.Id,
-                QuantityChange = -reqItem.Quantity,
-                Type = InventoryTransactionType.Issue,
-                ReferenceId = req.Id,
-                TransactionDate = DateTime.UtcNow,
-                PerformedById = assignedBy,
-                Remarks = $"Issued from requisition {req.Id}"
-            });
-        }
-
-        await _context.SaveChangesAsync();
-        await tx.CommitAsync();
-    }
+    // public async Task AssignToUserAsync(Guid requisitionId, Guid assignedBy)
+    // {
+    //     await using var tx = await _context.Database.BeginTransactionAsync();
+    //
+    //     var req = await _context.Requisitions
+    //         .Include(r => r.Items)
+    //         .Include(r => r.RequestedBy)
+    //         .FirstOrDefaultAsync(r => r.Id == requisitionId);
+    //
+    //     if (req == null)
+    //         throw new Exception("Requisition not found.");
+    //
+    //     if (req.RequestedBy == null)
+    //         throw new Exception("Requested user not found.");
+    //
+    //     foreach (var reqItem in req.Items)
+    //     {
+    //         var stock = await _context.InventoryStocks
+    //             .Include(x => x.Category)
+    //             .FirstOrDefaultAsync(x => x.Name == reqItem.ItemName);
+    //
+    //         if (stock == null)
+    //             throw new Exception($"Stock not found for {reqItem.ItemName}.");
+    //
+    //         if (stock.QuantityAvailable < reqItem.Quantity)
+    //             throw new Exception($"Insufficient stock for {stock.Name}.");
+    //
+    //         if (stock.Category.IsAssetTracked)
+    //         {
+    //             var availableAssets = await _context.InventoryItems
+    //                 .Where(x =>
+    //                     x.StockId == stock.Id &&
+    //                     x.Status == InventoryItemStatus.Available)
+    //                 .Take(reqItem.Quantity)
+    //                 .ToListAsync();
+    //
+    //             if (availableAssets.Count < reqItem.Quantity)
+    //                 throw new Exception($"Not enough available assets for {stock.Name}.");
+    //
+    //             foreach (var asset in availableAssets)
+    //             {
+    //                 asset.Status = InventoryItemStatus.Assigned;
+    //                 asset.AssignedToId = req.RequestedBy.Id;
+    //                 asset.AssignedDate = DateTime.UtcNow;
+    //
+    //                 _context.InventoryAssignmentHistories.Add(new InventoryAssignmentHistory
+    //                 {
+    //                     Id = Guid.NewGuid(),
+    //                     InventoryItemId = asset.Id,
+    //                     AssignedToId = req.RequestedBy.Id,
+    //                     AssignedDate = DateTime.UtcNow,
+    //                     ActionType = "ASSIGNED",
+    //                     PerformedById = assignedBy,
+    //                     Notes = $"Assigned from requisition {req.Id}"
+    //                 });
+    //             }
+    //         }
+    //
+    //         stock.QuantityAvailable -= reqItem.Quantity;
+    //
+    //         _context.InventoryTransactions.Add(new InventoryTransaction
+    //         {
+    //             Id = Guid.NewGuid(),
+    //             StockId = stock.Id,
+    //             QuantityChange = -reqItem.Quantity,
+    //             Type = InventoryTransactionType.Issue,
+    //             ReferenceId = req.Id,
+    //             TransactionDate = DateTime.UtcNow,
+    //             PerformedById = assignedBy,
+    //             Remarks = $"Issued from requisition {req.Id}"
+    //         });
+    //     }
+    //
+    //     await _context.SaveChangesAsync();
+    //     await tx.CommitAsync();
+    // }
 
     // ============================================================
     // STOCK / CATALOG

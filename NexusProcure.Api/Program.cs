@@ -17,16 +17,20 @@ using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Helper;
 using NexusProcure.Application.Interfaces.Inventory;
 using NexusProcure.Application.Interfaces.Procurement;
+using NexusProcure.Application.Interfaces.Reports;
 using NexusProcure.Application.Interfaces.RequestForQuotation;
 using NexusProcure.Application.Models;
 using NexusProcure.Application.Services;
 using NexusProcure.Application.Services.BackgroundJobs;
+using NexusProcure.Application.Services.Email;
 using NexusProcure.Application.Services.Helper;
 using NexusProcure.Application.Services.Inventory;
 using NexusProcure.Application.Services.Procurement;
+using NexusProcure.Application.Services.Reports;
 using NexusProcure.Application.Services.RequestForQuotation;
 using NexusProcure.Core.DTOs;
 using NexusProcure.Infrastructure.Data;
+using Resend;
 using Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -141,8 +145,8 @@ builder.Services.AddSingleton(provider =>
     return new Client(url, key);
 });
 
-builder.Services.Configure<RiskScoringOptions>(
-    builder.Configuration.GetSection("RiskScoring"));
+builder.Services.Configure<RiskSettings>(
+    builder.Configuration.GetSection("RiskSettings"));
 
 // Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -175,8 +179,19 @@ builder.Services.AddScoped<IInventoryStockService, InventoryStockService>();
 builder.Services.AddScoped<IInventoryRequestService, InventoryRequestService>();
 
 // Email
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+// builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+// builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+
+builder.Services.AddHttpClient<ResendClient>();
+
+builder.Services.Configure<ResendClientOptions>(options =>
+{
+    options.ApiToken = builder.Configuration["Resend:ApiKey"]!;
+});
+
+builder.Services.AddTransient<IResend, ResendClient>();
+
+builder.Services.AddScoped<IEmailService, ResendEmailService>();
 
 // Authorization
 builder.Services.AddScoped<IPermissionService, PermissionService>();
@@ -187,11 +202,12 @@ builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddScoped<IPurchaseOrderReceiptService, PurchaseOrderReceiptService>();
 builder.Services.AddScoped<IInventoryCodeService, InventoryCodeService>();
 
+builder.Services.AddScoped<IReportService, ReportService>();
+
 // Audit Log
 builder.Services.AddScoped<IAuditService, AuditService >();
 
 builder.Services.AddHttpContextAccessor();
-
 
 // ✅---------------------- HANGFIRE CONFIG ----------------------
 

@@ -17,8 +17,10 @@ public class MappingProfile : Profile
         CreateMap<User, UserDto>()
             .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => src.Role.Id))
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
-            .ForMember(dest => dest.DepartmentId, opt => opt.MapFrom(src => src.Department != null ? src.Department.Id : (Guid?)null))
-            .ForMember(dest => dest.DepartmentName, opt => opt.MapFrom(src => src.Department != null ? src.Department.DepartmentName : null))
+            .ForMember(dest => dest.DepartmentId,
+                opt => opt.MapFrom(src => src.Department != null ? src.Department.Id : (Guid?)null))
+            .ForMember(dest => dest.DepartmentName,
+                opt => opt.MapFrom(src => src.Department != null ? src.Department.DepartmentName : null))
             .ForMember(dest => dest.ManagerId, opt => opt.MapFrom(src => src.Manager.Id))
             .ForMember(dest => dest.ManagerName, opt => opt.MapFrom(src => src.Manager.FullName));
 
@@ -27,46 +29,94 @@ public class MappingProfile : Profile
 
         // // Role
         CreateMap<Role, RoleDto>();
-        
+
         CreateMap<CreateRoleDto, Role>();
-        
+
         // Department
         CreateMap<Department, DepartmentDto>()
             .ForMember(dest => dest.HeadName, opt => opt.MapFrom(src => src.Head != null ? src.Head.FullName : null))
             .ForMember(dest => dest.EmployeesCount, opt => opt.MapFrom(src => src.Users != null ? src.Users.Count : 0));
-        
+
         CreateMap<CreateDepartmentDto, Department>();
-        
+
         // // Permission
         CreateMap<Permission, PermissionDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Description));
-        
+
         // Vendor
         CreateMap<VendorRequestDto, Vendor>();
-        
+
         CreateMap<Vendor, VendorResponseDto>()
             .ForMember(dest => dest.CategoryIds,
                 opt => opt.MapFrom(src => src.VendorCategories.Select(vc => vc.CategoryId).ToList()))
             .ForMember(dest => dest.CategoryNames,
                 opt => opt.MapFrom(src => src.VendorCategories.Select(vc => vc.Category.Name).ToList()));
-        
+
         CreateMap<VendorDocument, VendorDocumentResponseDto>();
-        
+
         CreateMap<Category, CategoryResponse>();
         CreateMap<CategoryRequest, Category>();
-        
+
         // RequisitionItem -> RequisitionItemDto
-        CreateMap<RequisitionItem, RequisitionItemDto>();
+        CreateMap<RequisitionItem, RequisitionItemDto>()
+            .ForMember(
+                dest => dest.InventoryStockId,
+                opt => opt.MapFrom(src => src.InventoryStockId)
+            )
+            .ForMember(
+                dest => dest.ItemName,
+                opt => opt.MapFrom(src => src.InventoryStock.Name)
+            )
+            .ForMember(
+                dest => dest.SKU,
+                opt => opt.MapFrom(src => src.InventoryStock.SKU)
+            )
+            .ForMember(
+                dest => dest.CategoryName,
+                opt => opt.MapFrom(src => src.InventoryStock.Category.Name)
+            )
+            .ForMember(
+                dest => dest.Unit,
+                opt => opt.MapFrom(src => src.InventoryStock.Unit)
+            )
+            .ForMember(
+                dest => dest.LineTotal,
+                opt => opt.MapFrom(src => src.Quantity * src.EstimatedCost)
+            );
 
 // Requisition -> RequisitionResponseDto
         CreateMap<Requisition, RequisitionResponseDto>()
-            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items))
-            .ForMember(dest => dest.RequestedByName, opt => opt.MapFrom(src => src.RequestedBy.FullName))
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
-        
+            .ForMember(
+                dest => dest.Items,
+                opt => opt.MapFrom(src => src.Items)
+            )
+            .ForMember(
+                dest => dest.RequestedByName,
+                opt => opt.MapFrom(src => src.RequestedBy.FullName)
+            )
+            .ForMember(
+                dest => dest.CategoryName,
+                opt => opt.MapFrom(src =>
+                    !src.Items.Any()
+                        ? "-"
+                        : src.Items
+                            .Select(i => i.InventoryStock.Category.Name)
+                            .Distinct()
+                            .Count() == 1
+                            ? src.Items
+                                .Select(i => i.InventoryStock.Category.Name)
+                                .FirstOrDefault()
+                            : "Mixed"
+                )
+            )
+            .ForMember(
+                dest => dest.RiskLevel,
+                opt => opt.MapFrom(src => src.RiskLevel.ToString())
+            );
+
         CreateMap<User, UserResponseDto>();
-        
-        
+
+
 // Quotation -> QuotationResponseDto
         CreateMap<Quotation, QuotationApprovalListResponseDto>()
             .ForMember(dest => dest.RfqNumber, opt => opt.MapFrom(src => src.RequestForQuotation.RfqNumber))
@@ -82,12 +132,12 @@ public class MappingProfile : Profile
         CreateMap<PurchaseOrderItem, PurchaseOrderItemDto>();
 
         //CreateMap<CreateRoleDto, Role>();
-        
-        
+
+
         CreateMap<ApprovalLevel, ApprovalLevelResponseDto>()
             .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name));
-        
-        
+
+
         CreateMap<Approval, ApprovalDto>();
 
         CreateMap<RequestForQuotation, RfqDto>()
@@ -95,10 +145,8 @@ public class MappingProfile : Profile
                 dest => dest.TotalQuotationsRecieved,
                 opt => opt.MapFrom(src => src.Quotations.Count)
             );
-        
-        
-        
-        
+
+
         //Quotation Details
         CreateMap<Quotation, QuotationDetailsDto>()
             .ForMember(
@@ -120,7 +168,7 @@ public class MappingProfile : Profile
                 dest => dest.VendorAddress,
                 opt => opt.MapFrom(src => src.RfqVendor.Vendor.Address)
             );
-        
+
         CreateMap<QuotationItem, QuotationItemsDto>()
             .ForMember(
                 dest => dest.Total,
@@ -128,7 +176,5 @@ public class MappingProfile : Profile
                     src.Quantity * src.UnitPrice * (1 + src.TaxPercentage / 100)
                 )
             );
-
-
     }
 }
