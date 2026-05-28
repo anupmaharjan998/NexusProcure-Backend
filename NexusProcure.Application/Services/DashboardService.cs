@@ -310,16 +310,11 @@ public class DashboardService(NexusProcureDbContext context) : IDashboardService
     
             return new ManagerDashboardStatsDto
             {
-                // DepartmentTotalRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId),
-                // DepartmentPendingRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId && x.Status == "Pending"),
-                // DepartmentApprovedRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId && x.Status == "Approved"),
-                // DepartmentRejectedRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId && x.Status == "Rejected"),
+                DepartmentTotalRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId),
+                DepartmentPendingRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId && x.Status == "Pending"),
+                DepartmentApprovedRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId && x.Status == "Approved"),
+                DepartmentRejectedRequisitions = await context.Requisitions.CountAsync(x => x.DepartmentId == departmentId && x.Status == "Rejected"),
                 
-                //todo
-                DepartmentTotalRequisitions = 0,
-                DepartmentPendingRequisitions = 0,
-                DepartmentApprovedRequisitions = 0,
-                DepartmentRejectedRequisitions = 0,
     
                 PendingRequisitionApprovals = await context.Approvals
                     .CountAsync(x => x.Status == "Pending"),
@@ -328,7 +323,7 @@ public class DashboardService(NexusProcureDbContext context) : IDashboardService
                     .CountAsync(x => x.Status == "Pending" && x.ReferenceType == ApprovalReferenceType.RFQ && x.IsActive),
     
                 // DepartmentAssignedItems = await context.InventoryAssignments
-                //     .Where(x => x.AssignedTo.DepartmentId == departmentId && !x.IsReturned)
+                //     .Where(x => x.UserId.DepartmentId == departmentId && !x.IsReturned)
                 //     .SumAsync(x => (int?)x.Quantity) ?? 0
                     
                 DepartmentAssignedItems = 0

@@ -49,4 +49,21 @@ public class RolesController : BaseApiController
         var result = await _roleService.DeleteAsync(id);
         return result ? NoContent() : NotFound();
     }
+    
+    [HttpGet("check-role-name")]
+    public async Task<IActionResult> CheckRoleName(
+        [FromQuery] string name,
+        [FromQuery] Guid? excludeRoleId = null)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return BadRequest(new { message = "Role name is required" });
+        }
+    
+        var normalizedRoleName = name.Trim().ToLower();
+    
+        var exists = await _roleService.CheckRoleNameAsync(normalizedRoleName, excludeRoleId);
+    
+        return Ok(new { exists });
+    }
 }

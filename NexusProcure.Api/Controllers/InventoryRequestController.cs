@@ -161,6 +161,35 @@ public class InventoryRequestController : ControllerBase
             Message = "Inventory request rejected due to insufficient quantity."
         });
     }
+    
+    [HttpGet("my-assigned")]
+    public async Task<ActionResult<List<MyAssignedInventoryItemDto>>> GetMyAssignedItems()
+    {
+        var userId = GetUserId();
+
+        var items = await _service.GetMyAssignedItemsAsync(userId);
+
+        return Ok(items);
+    }
+    
+    [HttpGet("my-assigned/{itemId:guid}")]
+    public async Task<ActionResult<MyAssignedInventoryItemDetailDto>> GetMyAssignedItemDetail(
+        Guid itemId)
+    {
+        var userId = GetUserId();
+    
+        var item = await _service.GetMyAssignedItemDetailAsync(userId, itemId);
+    
+        if (item == null)
+        {
+            return NotFound(new
+            {
+                Message = "Assigned inventory item not found."
+            });
+        }
+    
+        return Ok(item);
+    }
 
     private Guid GetUserId()
     {

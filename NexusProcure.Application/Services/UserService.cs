@@ -56,9 +56,14 @@ public class UserService : IUserService
     public async Task<UserDto> CreateAsync(CreateUserDto dto)
     {
         var incomingEmail = (dto.Email ?? string.Empty).Trim();
+        var incomingUsername = (dto.Username ?? string.Empty).Trim();
         if (await _context.Users.AsNoTracking().AnyAsync(u => u.Email.ToLower() == incomingEmail.ToLower()))
         {
             throw new InvalidOperationException("A user with the provided email already exists.");
+        }
+        if (await _context.Users.AsNoTracking().AnyAsync(u => u.Username .ToLower() == incomingUsername.ToLower()))
+        {
+            throw new InvalidOperationException("A user with the provided username already exists.");
         }
         if (dto.ManagerId.HasValue)
         {
@@ -67,6 +72,10 @@ public class UserService : IUserService
 
             if (!managerExists)
                 throw new Exception("Invalid ManagerId");
+        }
+        else
+        {
+            dto.ManagerId = await _context.Departments.Where(x => x.Id == dto.DepartmentId).Select(i => i.HeadId).FirstOrDefaultAsync();
         }
         
         var user = _mapper.Map<User>(dto);
@@ -113,6 +122,10 @@ public class UserService : IUserService
                 throw new Exception("Manager not found");
 
             user.ManagerId = dto.ManagerId;
+        }
+        else
+        {
+            dto.ManagerId = await _context.Departments.Where(x => x.Id == dto.DepartmentId).Select(i => i.HeadId).FirstOrDefaultAsync();
         }
         
         user.IsActive = dto.IsActive;
@@ -237,6 +250,16 @@ public class UserService : IUserService
                 ManagerName = u.Manager != null ? u.Manager.FullName : null
             })
             .ToListAsync();
+    }
+
+    public async Task<bool> CheckUsernameAsync(string normalizedUsername, Guid? excludeUserId = null)
+    {
+        var exists = await _context.Users.AnyAsync(u =>
+            u.Username.ToLower() == normalizedUsername &&
+            (!excludeUserId.HasValue || u.Id != excludeUserId.Value)
+        );
+
+        return exists;
     }
 
 

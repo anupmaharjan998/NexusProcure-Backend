@@ -15,6 +15,7 @@ public class InventoryRequestSummaryDto
     public string Status { get; set; } = string.Empty;
 
     public int TotalItems { get; set; }
+    public string? ItemNames { get; set; }
 
     public DateTime CreatedAt { get; set; }
 }

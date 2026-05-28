@@ -13,4 +13,5 @@ public interface IUserService
     Task<ProfileImageResponse> UploadProfilePictureAsync(string email, IFormFile file);
     Task<UserDto?> UserProfileUpdateAsync(Guid id, UserUpdateDto dto);
     Task<List<UserDto>> SearchUsersAsync(string search);
+    Task<bool> CheckUsernameAsync(string normalizedUsername, Guid? excludeUserId = null);
 }

@@ -119,6 +119,7 @@ public class InventoryRequestService : IInventoryRequestService
                 Priority = x.Priority.ToString(),
                 Status = x.Status.ToString(),
                 TotalItems = x.Items.Count,
+                ItemNames = string.Join(", ", x.Items.Select(i => i.Stock.Name)),
                 CreatedAt = x.CreatedAt
             })
             .ToListAsync();
@@ -144,8 +145,9 @@ public class InventoryRequestService : IInventoryRequestService
             .Include(x => x.Items)
             .Where(x =>
                 x.Status == InventoryRequestStatus.PendingManagerApproval &&
-                x.RequestedBy.ManagerId != null &&
-                delegateUserIds.Contains(x.RequestedBy.ManagerId.Value))
+                x.RequestedBy.Department != null &&
+                x.RequestedBy.Department.HeadId != null &&
+                delegateUserIds.Contains(x.RequestedBy.Department.HeadId.Value))
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new InventoryRequestSummaryDto
             {
@@ -251,6 +253,7 @@ public class InventoryRequestService : IInventoryRequestService
     {
         var request = await _context.InventoryRequests
             .Include(r => r.RequestedBy)
+            .ThenInclude(r => r.Department)
             .FirstOrDefaultAsync(r => r.Id == requestId);
 
         if (request == null)
@@ -259,7 +262,7 @@ public class InventoryRequestService : IInventoryRequestService
         if (request.Status != InventoryRequestStatus.PendingManagerApproval)
             throw new Exception("Request is not pending manager approval.");
 
-        var managerId = request.RequestedBy.ManagerId
+        var managerId = request.RequestedBy.Department.HeadId
             ?? throw new Exception("Manager not assigned.");
 
         var delegateUser = await _delegationService.GetActiveDelegateAsync(managerId);
@@ -279,6 +282,7 @@ public class InventoryRequestService : IInventoryRequestService
     {
         var request = await _context.InventoryRequests
             .Include(r => r.RequestedBy)
+            .ThenInclude(r => r.Department)
             .FirstOrDefaultAsync(r => r.Id == requestId);
 
         if (request == null)
@@ -287,7 +291,7 @@ public class InventoryRequestService : IInventoryRequestService
         if (request.Status != InventoryRequestStatus.PendingManagerApproval)
             throw new Exception("Request is not pending manager approval.");
 
-        var managerId = request.RequestedBy.ManagerId
+        var managerId = request.RequestedBy.Department.HeadId
             ?? throw new Exception("Manager not assigned.");
 
         var delegateUser = await _delegationService.GetActiveDelegateAsync(managerId);
@@ -482,8 +486,8 @@ public class InventoryRequestService : IInventoryRequestService
             .Include(x => x.Items)
             .Where(x =>
                 x.Status == InventoryRequestStatus.PendingManagerProcurementDecision &&
-                x.RequestedBy.ManagerId != null &&
-                delegateUserIds.Contains(x.RequestedBy.ManagerId.Value))
+                x.RequestedBy.Department.HeadId != null &&
+                delegateUserIds.Contains(x.RequestedBy.Department.HeadId.Value))
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new InventoryRequestSummaryDto
             {
@@ -557,6 +561,7 @@ public class InventoryRequestService : IInventoryRequestService
     {
         var request = await _context.InventoryRequests
             .Include(x => x.RequestedBy)
+            .Include(x => x.Department)
             .FirstOrDefaultAsync(x => x.Id == requestId);
     
         if (request == null)
@@ -577,9 +582,71 @@ public class InventoryRequestService : IInventoryRequestService
         await _context.SaveChangesAsync();
     }
     
+    public async Task<List<MyAssignedInventoryItemDto>> GetMyAssignedItemsAsync(Guid userId)
+    {
+        return await _context.InventoryItems
+            .AsNoTracking()
+            .Include(x => x.InventoryCategory)
+            .Include(x => x.AssignedTo)
+            .ThenInclude(x => x.Department)
+            .Where(x => x.AssignedToId == userId)
+            .OrderByDescending(x => x.AssignedDate)
+            .Select(x => new MyAssignedInventoryItemDto
+            {
+                Id = x.Id,
+                ItemName = x.Name,
+                CategoryName = x.InventoryCategory != null ? x.InventoryCategory.Name : null,
+                SerialNumber = x.SerialNumber,
+                Barcode = x.Barcode,
+                Location = x.Location,
+                Department = x.AssignedTo != null ? x.AssignedTo.Department.DepartmentName : null ,
+                Condition = x.Condition.ToString(),
+                AssignedAt = x.AssignedDate
+            })
+            .ToListAsync();
+    }
+    
+    public async Task<MyAssignedInventoryItemDetailDto?> GetMyAssignedItemDetailAsync(
+        Guid userId,
+        Guid itemId)
+    {
+        return await _context.InventoryItems
+            .AsNoTracking()
+            .Include(x => x.InventoryCategory)
+            .Include(x => x.AssignedTo)
+                .ThenInclude(x => x.Department)
+            .Where(x =>
+                x.Id == itemId &&
+                x.AssignedToId == userId)
+            .Select(x => new MyAssignedInventoryItemDetailDto
+            {
+                Id = x.Id,
+                ItemName = x.Name,
+                CategoryName = x.InventoryCategory != null
+                    ? x.InventoryCategory.Name
+                    : null,
+                SKU = x.SKU,
+                Barcode = x.Barcode,
+                SerialNumber = x.SerialNumber,
+                Department = x.AssignedTo != null && x.AssignedTo.Department != null
+                    ? x.AssignedTo.Department.DepartmentName
+                    : null,
+                AssignedTo = x.AssignedTo != null
+                    ? x.AssignedTo.FullName
+                    : null,
+                Location = x.Location,
+                Condition = x.Condition.ToString(),
+                Status = x.Status.ToString(),
+                AssignedAt = x.AssignedDate,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
+            })
+            .FirstOrDefaultAsync();
+    }
+    
     private async Task ValidateManagerOrDelegateAsync(InventoryRequest request, Guid managerId)
     {
-        var actualManagerId = request.RequestedBy.ManagerId
+        var actualManagerId = request.Department.HeadId
             ?? throw new Exception("Manager not assigned.");
     
         var delegateUser = await _delegationService.GetActiveDelegateAsync(actualManagerId);

@@ -40,6 +40,11 @@ public class DepartmentService : IDepartmentService
 
         public async Task<DepartmentDto> CreateAsync(CreateDepartmentDto dto)
         {
+            var incomingDepartmentName = (dto.DepartmentName ?? string.Empty).Trim();
+            if (await _context.Departments.AsNoTracking().AnyAsync(u => u.DepartmentName.ToLower() == incomingDepartmentName.ToLower()))
+            {
+                throw new InvalidOperationException("The provided department name already exists.");
+            }
             var department = _mapper.Map<Department>(dto);
             _context.Departments.Add(department);
             await _context.SaveChangesAsync();
@@ -68,4 +73,14 @@ public class DepartmentService : IDepartmentService
             await _context.SaveChangesAsync();
             return true;
         }
+        
+        public async Task<bool> CheckDepartmentNameAsync(string normalizedDepartmentName, Guid? excludeDepartmentId = null)
+            {
+                var exists = await _context.Departments.AnyAsync(r =>
+                    r.DepartmentName.ToLower() == normalizedDepartmentName &&
+                    (!excludeDepartmentId.HasValue || r.Id != excludeDepartmentId.Value)
+                );
+        
+                return exists;
+            }
     }
