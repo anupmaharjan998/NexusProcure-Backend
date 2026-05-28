@@ -3,12 +3,12 @@ using System.Text;
 using CloudinaryDotNet;
 using Hangfire;
 using Hangfire.Dashboard;
+using Hangfire.MemoryStorage;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using NexusProcure.Api.Authorization;
 using NexusProcure.Api.hangfire;
 using NexusProcure.Application;
@@ -30,8 +30,8 @@ using NexusProcure.Application.Services.Procurement;
 using NexusProcure.Application.Services.ProcurementRequest;
 using NexusProcure.Application.Services.Reports;
 using NexusProcure.Application.Services.RequestForQuotation;
-using NexusProcure.Core.DTOs;
 using NexusProcure.Infrastructure.Data;
+using Npgsql;
 using Resend;
 using Supabase;
 
@@ -110,7 +110,7 @@ builder.Services
             IssuerSigningKey = signingKey,
             ClockSkew = TimeSpan.Zero,
             NameClaimType = ClaimTypes.Email,
-            RoleClaimType = ClaimTypes.Role  
+            RoleClaimType = ClaimTypes.Role
         };
     });
 
@@ -208,7 +208,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IProcurementRequestService, ProcurementRequestService>();
 
 // Audit Log
-builder.Services.AddScoped<IAuditService, AuditService >();
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -279,25 +279,74 @@ builder.Services.AddScoped<HangfireJobLoggingFilter>();
 //
 //     builder.Services.AddHangfireServer();
 // }
+// var hangfireConnection = builder.Configuration
+//     .GetConnectionString("DefaultConnectionHangFire");
+//
+// builder.Services.AddHangfire(config =>
+// {
+//     config.UseSimpleAssemblyNameTypeSerializer()
+//         .UseRecommendedSerializerSettings()
+//         .UsePostgreSqlStorage(hangfireConnection);
+// });
+//
+// builder.Services.AddHangfireServer(options =>
+// {
+//     options.Queues = new[] { "default", "rfq" };
+// });
+
 var hangfireConnection = builder.Configuration
     .GetConnectionString("DefaultConnectionHangFire");
+
+var canUseHangfirePostgres = CanConnectToPostgres(hangfireConnection);
 
 builder.Services.AddHangfire(config =>
 {
     config.UseSimpleAssemblyNameTypeSerializer()
-        .UseRecommendedSerializerSettings()
-        .UsePostgreSqlStorage(hangfireConnection);
+        .UseRecommendedSerializerSettings();
+
+    if (canUseHangfirePostgres)
+    {
+        config.UsePostgreSqlStorage(hangfireConnection);
+        Console.WriteLine("Hangfire is using PostgreSQL storage.");
+    }
+    else
+    {
+        config.UseMemoryStorage();
+        Console.WriteLine(
+            "WARNING: Hangfire PostgreSQL is unavailable. Using in-memory Hangfire storage so API can continue running.");
+    }
 });
 
-builder.Services.AddHangfireServer(options =>
+builder.Services.AddHangfireServer(options => { options.Queues = new[] { "default", "rfq" }; });
+
+
+static bool CanConnectToPostgres(string? connectionString)
 {
-    options.Queues = new[] { "default", "rfq" };
-});
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return false;
+    }
 
+    try
+    {
+        var csb = new NpgsqlConnectionStringBuilder(connectionString)
+        {
+            Timeout = 3,
+            CommandTimeout = 3,
+            Pooling = false
+        };
 
+        using var connection = new NpgsqlConnection(csb.ConnectionString);
+        connection.Open();
 
-
-
+        return true;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"WARNING: Could not connect to Hangfire PostgreSQL. Reason: {ex.Message}");
+        return false;
+    }
+}
 
 
 // ---------------------------------------------------------------
@@ -305,38 +354,77 @@ builder.Services.AddHangfireServer(options =>
 
 var app = builder.Build();
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+// app.UseHangfireDashboard("/hangfire", new DashboardOptions
+// {
+//     Authorization = new IDashboardAuthorizationFilter[]
+//     {
+//         new HangfireBasicAuthFilter("admin", "Admin@123")
+//     }
+// });
+//
+// RecurringJob.AddOrUpdate<IApprovalEscalationJob>(
+//     "approval-escalation-job",
+//     job => job.RunAsync(),
+//     Cron.Hourly
+// );
+//
+// RecurringJob.AddOrUpdate<IRfqJob>(
+//     "rfq-closing-job",
+//     job => job.ValidateTokenAsync(),
+//     Cron.Daily
+// );
+//
+// RecurringJob.AddOrUpdate<IPurchaseRequestJob>(
+//     "purchase-order-receiving",
+//     job => job.RunAsync(),
+//     Cron.Daily
+// );
+//
+// RecurringJob.AddOrUpdate<IDelegationService>(
+//     "expire-delegations",
+//     service => service.ExpireDelegationsAsync(),
+//     Cron.Daily
+// );
+
+try
 {
-    Authorization = new IDashboardAuthorizationFilter[]
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
-        new HangfireBasicAuthFilter("admin", "Admin@123")
-    }
-});
+        Authorization = new IDashboardAuthorizationFilter[]
+        {
+            new HangfireBasicAuthFilter("admin", "Admin@123")
+        }
+    });
 
-RecurringJob.AddOrUpdate<IApprovalEscalationJob>(
-    "approval-escalation-job",
-    job => job.RunAsync(),
-    Cron.Hourly
-);
+    RecurringJob.AddOrUpdate<IApprovalEscalationJob>(
+        "approval-escalation-job",
+        job => job.RunAsync(),
+        Cron.Hourly
+    );
 
-RecurringJob.AddOrUpdate<IRfqJob>(
-    "rfq-closing-job",
-    job => job.ValidateTokenAsync(),
-    Cron.Daily
-);
+    RecurringJob.AddOrUpdate<IRfqJob>(
+        "rfq-closing-job",
+        job => job.ValidateTokenAsync(),
+        Cron.Daily
+    );
 
-RecurringJob.AddOrUpdate<IPurchaseRequestJob>(
-    "purchase-order-receiving",
-    job => job.RunAsync(),
-    Cron.Daily
-);
+    RecurringJob.AddOrUpdate<IPurchaseRequestJob>(
+        "purchase-order-receiving",
+        job => job.RunAsync(),
+        Cron.Daily
+    );
 
-RecurringJob.AddOrUpdate<IDelegationService>(
-    "expire-delegations",
-    service => service.ExpireDelegationsAsync(),
-    Cron.Daily
-);
-
+    RecurringJob.AddOrUpdate<IDelegationService>(
+        "expire-delegations",
+        service => service.ExpireDelegationsAsync(),
+        Cron.Daily
+    );
+}
+catch (Exception ex)
+{
+    Console.WriteLine(
+        $"WARNING: Hangfire dashboard or recurring jobs failed. API will continue running. Reason: {ex.Message}");
+}
 
 // // Swagger
 // if (app.Environment.IsDevelopment())
