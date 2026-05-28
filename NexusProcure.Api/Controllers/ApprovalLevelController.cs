@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using NexusProcure.Application.Interfaces;
 using NexusProcure.Core.DTOs;
 
@@ -14,6 +15,7 @@ public class ApprovalLevelController : BaseApiController
     }
 
     [HttpPost("create-approval-level")]
+        [Authorize(Policy = "ADD_POLICIES")]
     public async Task<IActionResult> Create([FromBody] ApprovalLeveRequestlDto dto)
     {
         var approvalLevel = await _approvalLevelService.CreateAsync(dto);
@@ -21,6 +23,7 @@ public class ApprovalLevelController : BaseApiController
     }
 
     [HttpGet("get-all-level")]
+    [Authorize(Policy = "VIEW_POLICIES")]
     public async Task<IActionResult> GetAll()
     {
         var levels = await _approvalLevelService.GetAllAsync();
@@ -28,6 +31,7 @@ public class ApprovalLevelController : BaseApiController
     }
 
     [HttpGet("geyById/{id}")]
+    [Authorize(Policy = "VIEW_POLICIES")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var role = await _approvalLevelService.GetByIdAsync(id);
@@ -35,6 +39,7 @@ public class ApprovalLevelController : BaseApiController
     }
 
     [HttpPut("{id}")]
+    [Authorize(Policy = "UPDATE_POLICIES")]
     public async Task<IActionResult> Update(Guid id, ApprovalLeveRequestlDto dto)
     {
         var updated = await _approvalLevelService.UpdateAsync(id, dto);
@@ -42,6 +47,7 @@ public class ApprovalLevelController : BaseApiController
     }
     
     [HttpDelete("{id}")]
+        [Authorize(Policy = "DELETE_POLICIES")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _approvalLevelService.DeleteAsync(id);

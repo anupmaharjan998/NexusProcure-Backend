@@ -25,6 +25,7 @@ public class RequisitionApprovalController : BaseApiController
     }
 
     [HttpPost("{id}/approve")]
+    [Authorize(Policy = "APPROVE_REQUISITION")]
     public async Task<IActionResult> ApproveRequisition(Guid id, [FromBody] ApprovalRequestDto dto)
     {
         try
@@ -57,6 +58,7 @@ public class RequisitionApprovalController : BaseApiController
     
     
     [HttpPost("{id}/approve-quotation")]
+    [Authorize(Policy = "APPROVE_REQUISITION")]
     public async Task<IActionResult> ApproveQuotation(Guid id, [FromBody] ApprovalRequestDto dto)
     {
         try

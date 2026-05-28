@@ -15,6 +15,7 @@ public class ApprovalPolicyController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Policy = "VIEW_POLICIES")]
     public async Task<IActionResult> GetPolicies()
     {
         var policies = await _policyService.GetPoliciesAsync();

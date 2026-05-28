@@ -91,5 +91,20 @@ public class UsersController : BaseApiController
         return Ok(users); // return empty list if no match
     }
 
-    
+    [HttpGet("check-username")]
+    public async Task<IActionResult> CheckUsername(
+        [FromQuery] string username,
+        [FromQuery] Guid? excludeUserId = null)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            return BadRequest(new { message = "Username is required" });
+        }
+
+        var normalizedUsername = username.Trim().ToLower();
+
+        var exists = await _userService.CheckUsernameAsync(normalizedUsername, excludeUserId);
+
+        return Ok(new { exists });
+    }
 }

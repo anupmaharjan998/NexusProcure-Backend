@@ -16,6 +16,7 @@ public class ApprovalController : BaseApiController
     }
 
     [HttpGet("{requisitionId}")]
+        [Authorize(Policy = "APPROVE_REQUISITION")]
     public async Task<IActionResult> GetApprovalsForRequisition(Guid requisitionId)
     {
         var approvals = await _approvalService.GetApprovalsForRequisitionAsync(requisitionId);
@@ -23,6 +24,7 @@ public class ApprovalController : BaseApiController
     }
 
     [HttpGet("pending/{userId}")]
+    [Authorize(Policy = "APPROVE_REQUISITION")]
     public async Task<IActionResult> GetPendingApprovals(Guid userId)
     {
         var pending = await _approvalService.GetPendingApprovalsForRoleAsync(userId);

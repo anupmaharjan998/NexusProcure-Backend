@@ -9,4 +9,5 @@ public interface IDepartmentService
     Task<DepartmentDto> CreateAsync(CreateDepartmentDto dto);
     Task<DepartmentDto?> UpdateAsync(Guid id, UpdateDepartmentDto dto);
     Task<bool> DeleteAsync(Guid id);
+    Task<bool> CheckDepartmentNameAsync(string normalizedDepartmentName, Guid? excludeDepartmentId = null);
 }

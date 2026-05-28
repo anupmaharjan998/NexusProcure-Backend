@@ -27,4 +27,7 @@ public interface IInventoryRequestService
     Task SendShortageToProcurementAsync(Guid requestId, Guid managerId, string? remarks = null);
 
     Task RejectShortageAsync(Guid requestId, Guid managerId, string? remarks = null);
+    
+    Task<List<MyAssignedInventoryItemDto>> GetMyAssignedItemsAsync(Guid userId);
+    Task<MyAssignedInventoryItemDetailDto?> GetMyAssignedItemDetailAsync(Guid userId, Guid itemId);
 }

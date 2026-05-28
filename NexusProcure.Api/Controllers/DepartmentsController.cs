@@ -49,4 +49,21 @@ public class DepartmentsController : BaseApiController
         var result = await _departmentService.DeleteAsync(id);
         return result ? NoContent() : NotFound();
     }
+    
+    [HttpGet("check-department-name")]
+        public async Task<IActionResult> CheckRoleName(
+            [FromQuery] string departmentName,
+            [FromQuery] Guid? excludeDepartmentId = null)
+        {
+            if (string.IsNullOrWhiteSpace(departmentName))
+            {
+                return BadRequest(new { message = "Department name is required" });
+            }
+        
+            var normalizedDepartmentName = departmentName.Trim().ToLower();
+        
+            var exists = await _departmentService.CheckDepartmentNameAsync(normalizedDepartmentName, excludeDepartmentId);
+        
+            return Ok(new { exists });
+        }
 }
