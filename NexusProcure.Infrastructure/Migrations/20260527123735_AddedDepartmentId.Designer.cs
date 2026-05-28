@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NexusProcure.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NexusProcure.Infrastructure.Migrations
 {
     [DbContext(typeof(NexusProcureDbContext))]
-    partial class NexusProcureDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260527123735_AddedDepartmentId")]
+    partial class AddedDepartmentId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1140,14 +1143,14 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("50000000-0000-0000-0000-000000000001"),
-                            Description = "Create purchase requisition and RFQ",
+                            Description = "Create purchase requisition",
                             Group = "Procurement",
                             Key = "CREATE_REQUISITION"
                         },
                         new
                         {
                             Id = new Guid("50000000-0000-0000-0000-000000000002"),
-                            Description = "Approve requisition and Quotation",
+                            Description = "Approve requisition",
                             Group = "Procurement",
                             Key = "APPROVE_REQUISITION"
                         },
@@ -1164,13 +1167,6 @@ namespace NexusProcure.Infrastructure.Migrations
                             Description = "View purchase order details",
                             Group = "Procurement",
                             Key = "VIEW_PURCHASE_ORDER"
-                        },
-                        new
-                        {
-                            Id = new Guid("50000000-0000-0000-0000-000000000005"),
-                            Description = "Receive purchase order details",
-                            Group = "Procurement",
-                            Key = "RECEIVE_PURCHASE_ORDER"
                         },
                         new
                         {
@@ -1213,20 +1209,6 @@ namespace NexusProcure.Infrastructure.Migrations
                             Description = "Unassigned asset from employee",
                             Group = "Inventory",
                             Key = "UNASSIGN_ASSET"
-                        },
-                        new
-                        {
-                            Id = new Guid("60000000-0000-0000-0000-000000000007"),
-                            Description = "Request asset from inventory",
-                            Group = "Inventory",
-                            Key = "REQUEST_ASSET"
-                        },
-                        new
-                        {
-                            Id = new Guid("60000000-0000-0000-0000-000000000008"),
-                            Description = "Approve  asset request",
-                            Group = "Inventory",
-                            Key = "REQUEST_ASSET_APPROVAL"
                         },
                         new
                         {
@@ -1346,13 +1328,6 @@ namespace NexusProcure.Infrastructure.Migrations
                             Description = "Delete total amount risk score",
                             Group = "Policies",
                             Key = "DELETE_TOTAL_AMOUNT_RISK_SCORE"
-                        },
-                        new
-                        {
-                            Id = new Guid("12000000-0000-0000-0000-000000000007"),
-                            Description = "View permissions",
-                            Group = "Policies",
-                            Key = "VIEW_POLICIES"
                         },
                         new
                         {
@@ -2203,11 +2178,6 @@ namespace NexusProcure.Infrastructure.Migrations
                         new
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("50000000-0000-0000-0000-000000000005")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("60000000-0000-0000-0000-000000000001")
                         },
                         new
@@ -2234,16 +2204,6 @@ namespace NexusProcure.Infrastructure.Migrations
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("60000000-0000-0000-0000-000000000006")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("60000000-0000-0000-0000-000000000007")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("60000000-0000-0000-0000-000000000008")
                         },
                         new
                         {
@@ -2329,11 +2289,6 @@ namespace NexusProcure.Infrastructure.Migrations
                         {
                             RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
                             PermissionId = new Guid("12000000-0000-0000-0000-000000000006")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("c76abcb8-63b5-4e14-8428-3a9a9b7ad001"),
-                            PermissionId = new Guid("12000000-0000-0000-0000-000000000007")
                         },
                         new
                         {

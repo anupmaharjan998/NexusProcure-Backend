@@ -2,13 +2,17 @@
 
 public enum InventoryRequestStatus
 {
-    PendingManagerApproval = 1,
-    ApprovedByManager = 2,
-    RejectedByManager = 3,
-    Completed = 4,
-    PendingManagerProcurementDecision = 5,
+    Draft = 0,
+    Submitted = 1,
+    PendingManagerApproval = 2,
+    PendingManagerProcurementDecision = 3,
+    ManagerApproved = 4,
+    ManagerRejected = 5,
     SentForProcurement = 6,
-    RejectedInsufficientQuantity = 7
+    ProcurementInProgress = 7,
+    Completed = 8,
+    Cancelled = 9,
+    RejectedInsufficientQuantity = 10
 }
 
 public enum ProcurementStatus

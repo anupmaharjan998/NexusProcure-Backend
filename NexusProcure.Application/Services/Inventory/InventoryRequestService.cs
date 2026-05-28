@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Hangfire;
+using Microsoft.EntityFrameworkCore;
 using NexusProcure.Application.Interfaces;
+using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Inventory;
+using NexusProcure.Application.Interfaces.ProcurementRequest;
 using NexusProcure.Core.DTOs.Inventory;
 using NexusProcure.Core.Entities.Inventory;
 using NexusProcure.Core.Enums;
@@ -12,13 +15,19 @@ public class InventoryRequestService : IInventoryRequestService
 {
     private readonly NexusProcureDbContext _context;
     private readonly IDelegationService _delegationService;
+    private readonly IProcurementRequestService _procurementRequestService;
+    private readonly IBackgroundJobClient _backgroundJobClient;
 
     public InventoryRequestService(
         NexusProcureDbContext context,
-        IDelegationService delegationService)
+        IDelegationService delegationService,
+        IProcurementRequestService procurementRequestService,
+        IBackgroundJobClient backgroundJobClient)
     {
         _context = context;
         _delegationService = delegationService;
+        _procurementRequestService = procurementRequestService;
+        _backgroundJobClient = backgroundJobClient;
     }
 
     public async Task<Guid> CreateAsync(Guid userId, CreateInventoryRequestDto dto)
@@ -159,7 +168,7 @@ public class InventoryRequestService : IInventoryRequestService
             .Include(x => x.RequestedBy)
             .Include(x => x.Department)
             .Include(x => x.Items)
-            .Where(x => x.Status == InventoryRequestStatus.ApprovedByManager)
+            .Where(x => x.Status == InventoryRequestStatus.ManagerApproved)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new InventoryRequestSummaryDto
             {
@@ -259,7 +268,7 @@ public class InventoryRequestService : IInventoryRequestService
         if (approverId != validApprover)
             throw new Exception("Unauthorized.");
 
-        request.Status = InventoryRequestStatus.ApprovedByManager;
+        request.Status = InventoryRequestStatus.ManagerApproved;
         request.ApprovedByManagerId = approverId;
         request.UpdatedAt = DateTime.UtcNow;
 
@@ -287,7 +296,7 @@ public class InventoryRequestService : IInventoryRequestService
         if (approverId != validApprover)
             throw new Exception("Unauthorized.");
 
-        request.Status = InventoryRequestStatus.RejectedByManager;
+        request.Status = InventoryRequestStatus.ManagerRejected;
         request.ApprovedByManagerId = approverId;
         request.Remarks = remarks;
         request.UpdatedAt = DateTime.UtcNow;
@@ -311,7 +320,7 @@ public class InventoryRequestService : IInventoryRequestService
         if (request == null)
             throw new Exception("Request not found.");
 
-        if (request.Status != InventoryRequestStatus.ApprovedByManager)
+        if (request.Status != InventoryRequestStatus.ManagerApproved)
             throw new Exception("Request is not approved by manager.");
 
         var allAvailable = true;
@@ -495,10 +504,14 @@ public class InventoryRequestService : IInventoryRequestService
         Guid managerId,
         string? remarks = null)
     {
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
         var request = await _context.InventoryRequests
             .Include(x => x.RequestedBy)
+            .Include(x => x.Department)
             .Include(x => x.Items)
             .ThenInclude(x => x.Stock)
+            .ThenInclude(x => x.Category)
             .FirstOrDefaultAsync(x => x.Id == requestId);
 
         if (request == null)
@@ -509,24 +522,32 @@ public class InventoryRequestService : IInventoryRequestService
 
         await ValidateManagerOrDelegateAsync(request, managerId);
 
+        var shortageItems = request.Items
+            .Where(x => x.QuantityIssued < x.QuantityRequested)
+            .ToList();
+
+        if (!shortageItems.Any())
+            throw new Exception("No shortage items found for procurement.");
+
         request.Status = InventoryRequestStatus.SentForProcurement;
         request.Remarks = string.IsNullOrWhiteSpace(remarks)
             ? "Manager approved shortage request for procurement."
             : remarks.Trim();
 
+        request.ApprovedByManagerId = managerId;
         request.UpdatedAt = DateTime.UtcNow;
 
-        /*
-           OPTIONAL:
-           If your ProcurementRequest entity is ready, create procurement request here.
-
-           Example idea:
-           - Create ProcurementRequest
-           - Create ProcurementRequestItems only for shortage quantity
-           - Link it back to InventoryRequest.Id if you have ReferenceId field
-        */
-
         await _context.SaveChangesAsync();
+
+        // await _procurementRequestService.CreateFromApprovedInventoryRequestAsync(
+        //     request.Id,
+        //     managerId,
+        //     request.Remarks
+        // );
+
+        await tx.CommitAsync();
+        _backgroundJobClient.Enqueue<IProcurementRequestJob>(
+            job => job.CreateInventoryRequestAsync(request.Id, managerId, request.Remarks) );
     }
     
     public async Task RejectShortageAsync(

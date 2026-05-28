@@ -139,6 +139,12 @@ public class NexusProcureDbContext : DbContext
                 .WithOne(po => po.Requisition)
                 .HasForeignKey(po => po.RequisitionId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(r => r.Department)
+                .WithMany()
+                .HasForeignKey(r => r.DepartmentId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         /* ===============================
@@ -579,6 +585,58 @@ public class NexusProcureDbContext : DbContext
 
             entity.HasIndex(x => new { x.InventoryRequestItemId, x.InventoryItemId })
                 .IsUnique();
+        });
+        
+        modelBuilder.Entity<ProcurementRequest>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+        
+            entity.HasOne(x => x.InventoryRequest)
+                .WithMany()
+                .HasForeignKey(x => x.InventoryRequestId)
+                .OnDelete(DeleteBehavior.Restrict);
+        
+            entity.HasOne(x => x.RequestedBy)
+                .WithMany()
+                .HasForeignKey(x => x.RequestedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        
+            entity.HasOne(x => x.ApprovedByManager)
+                .WithMany()
+                .HasForeignKey(x => x.ApprovedByManagerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        
+            entity.HasMany(x => x.Items)
+                .WithOne(x => x.ProcurementRequest)
+                .HasForeignKey(x => x.ProcurementRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+        
+            entity.Property(x => x.Status)
+                .HasMaxLength(50)
+                .IsRequired();
+        
+            entity.Property(x => x.Remarks)
+                .HasMaxLength(1000);
+        });
+        
+        modelBuilder.Entity<ProcurementRequestItem>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+        
+            entity.HasOne(x => x.ProcurementRequest)
+                .WithMany(x => x.Items)
+                .HasForeignKey(x => x.ProcurementRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+        
+            entity.HasOne(x => x.InventoryRequestItem)
+                .WithMany()
+                .HasForeignKey(x => x.InventoryRequestItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+        
+            entity.HasOne(x => x.InventoryStock)
+                .WithMany()
+                .HasForeignKey(x => x.InventoryStockId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         /* ===============================

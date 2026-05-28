@@ -51,7 +51,7 @@ public class RequisitionService : IRequisitionService
      public async Task<RequisitionResponseDto> CreateAsync(RequisitionCreateDto dto)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync();
-
+        var committed = false;
         try
         {
             if (dto.RequestedById == Guid.Empty)
@@ -124,6 +124,10 @@ public class RequisitionService : IRequisitionService
                 RiskLevel = RiskLevel.Low,
                 TotalAmount = 0
             };
+            if (dto.DepartmentId != Guid.Empty)
+            {
+                requisition.DepartmentId = dto.DepartmentId;
+            }
 
             foreach (var itemDto in dto.Items)
             {
@@ -188,7 +192,7 @@ public class RequisitionService : IRequisitionService
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
-
+            committed = true;
             BackgroundJob.Enqueue<IEmailJobService>(
                 job => job.SendApprovalNotificationAsync(requisition.Id));
 
@@ -196,7 +200,11 @@ public class RequisitionService : IRequisitionService
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (!committed)
+            {
+                await transaction.RollbackAsync();
+            }
+
             throw;
         }
     }

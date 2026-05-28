@@ -17,6 +17,7 @@ using NexusProcure.Application.Interfaces.BackgroundJobs;
 using NexusProcure.Application.Interfaces.Helper;
 using NexusProcure.Application.Interfaces.Inventory;
 using NexusProcure.Application.Interfaces.Procurement;
+using NexusProcure.Application.Interfaces.ProcurementRequest;
 using NexusProcure.Application.Interfaces.Reports;
 using NexusProcure.Application.Interfaces.RequestForQuotation;
 using NexusProcure.Application.Models;
@@ -26,6 +27,7 @@ using NexusProcure.Application.Services.Email;
 using NexusProcure.Application.Services.Helper;
 using NexusProcure.Application.Services.Inventory;
 using NexusProcure.Application.Services.Procurement;
+using NexusProcure.Application.Services.ProcurementRequest;
 using NexusProcure.Application.Services.Reports;
 using NexusProcure.Application.Services.RequestForQuotation;
 using NexusProcure.Core.DTOs;
@@ -203,6 +205,7 @@ builder.Services.AddScoped<IPurchaseOrderReceiptService, PurchaseOrderReceiptSer
 builder.Services.AddScoped<IInventoryCodeService, InventoryCodeService>();
 
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IProcurementRequestService, ProcurementRequestService>();
 
 // Audit Log
 builder.Services.AddScoped<IAuditService, AuditService >();
@@ -218,6 +221,7 @@ builder.Services.AddScoped<IRfqJob, RfqJob>();
 builder.Services.AddScoped<IRfqApprovalJob, RfqApprovalJob>();
 builder.Services.AddScoped<IPurchaseRequestJob, PurchaseRequestJob>();
 builder.Services.AddScoped<IInventoryReceiptJob, InventoryReceiptJob>();
+builder.Services.AddScoped<IProcurementRequestJob, ProcurementRequestJob>();
 
 
 builder.Services.AddAuthorization(options =>
