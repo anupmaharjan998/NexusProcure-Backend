@@ -18,6 +18,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("dashboard")]
+    [Authorize(Policy = "VIEW_DASHBOARD_REPORTS")]
     public async Task<IActionResult> GetDashboard()
     {
         var result = await _reportService.GetDashboardAsync();
@@ -25,6 +26,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("summary")]
+    [Authorize(Policy = "VIEW_DASHBOARD_REPORTS")]
     public async Task<IActionResult> GetSummary()
     {
         var result = await _reportService.GetDashboardSummaryAsync();
@@ -32,6 +34,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("requisition-status")]
+    [Authorize(Policy = "VIEW_DASHBOARD_REPORTS")]
     public async Task<IActionResult> GetRequisitionStatus()
     {
         var result = await _reportService.GetRequisitionStatusAsync();
@@ -39,6 +42,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("monthly-spend")]
+    [Authorize(Policy = "VIEW_DASHBOARD_REPORTS")]
     public async Task<IActionResult> GetMonthlySpend([FromQuery] int? year)
     {
         var selectedYear = year ?? DateTime.UtcNow.Year;

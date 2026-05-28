@@ -42,7 +42,6 @@ public class ProcurementRequestController : ControllerBase
     }
 
     [HttpPost("{id:guid}/create-requisition")]
-    [Authorize(Roles = "Admin,ProcurementOfficer,Procurement Officer")]
     public async Task<IActionResult> CreateRequisition(
         Guid id,
         [FromBody] CreateRequisitionFromProcurementRequestDto dto)
