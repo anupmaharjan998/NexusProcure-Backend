@@ -38,10 +38,11 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("40000000-0000-0000-0000-000000000007"), Group = "Vendor", Key = "DELETE_VENDOR_DOCUMENT", Description = "Delete vendor document" },
 
                 // ------------------ Procurement ------------------
-                new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000001"), Group = "Procurement", Key = "CREATE_REQUISITION", Description = "Create purchase requisition" },
-                new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000002"), Group = "Procurement", Key = "APPROVE_REQUISITION", Description = "Approve requisition" },
+                new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000001"), Group = "Procurement", Key = "CREATE_REQUISITION", Description = "Create purchase requisition and RFQ" },
+                new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000002"), Group = "Procurement", Key = "APPROVE_REQUISITION", Description = "Approve requisition and Quotation" },
                 new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000003"), Group = "Procurement", Key = "CREATE_PURCHASE_ORDER", Description = "Create purchase order" },
                 new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000004"), Group = "Procurement", Key = "VIEW_PURCHASE_ORDER", Description = "View purchase order details" },
+                new Permission { Id = Guid.Parse("50000000-0000-0000-0000-000000000005"), Group = "Procurement", Key = "RECEIVE_PURCHASE_ORDER", Description = "Receive purchase order details" },
 
                 // ------------------ Inventory & Asset Management ------------------
                 new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000001"), Group = "Inventory", Key = "VIEW_INVENTORY", Description = "View inventory list" },
@@ -50,6 +51,8 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000004"), Group = "Inventory", Key = "DELETE_INVENTORY_ITEM", Description = "Delete inventory items" },
                 new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000005"), Group = "Inventory", Key = "ASSIGN_ASSET", Description = "Assign asset to employee" },
                 new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000006"), Group = "Inventory", Key = "UNASSIGN_ASSET", Description = "Unassigned asset from employee" },
+                new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000007"), Group = "Inventory", Key = "REQUEST_ASSET", Description = "Request asset from inventory" },
+                new Permission { Id = Guid.Parse("60000000-0000-0000-0000-000000000008"), Group = "Inventory", Key = "REQUEST_ASSET_APPROVAL", Description = "Approve  asset request" },
 
                 // ------------------ Reporting ------------------
                 new Permission { Id = Guid.Parse("70000000-0000-0000-0000-000000000001"), Group = "Reporting", Key = "VIEW_REPORTS", Description = "View reports" },
@@ -77,6 +80,7 @@ namespace NexusProcure.Infrastructure.Data.Seeds
                 new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000004"), Group = "Policies", Key = "ADD_TOTAL_AMOUNT_RISK_SCORE", Description = "Add total amount risk score" },
                 new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000005"), Group = "Policies", Key = "UPDATE_TOTAL_AMOUNT_RISK_SCORE", Description = "Update total amount risk score" },
                 new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000006"), Group = "Policies", Key = "DELETE_TOTAL_AMOUNT_RISK_SCORE", Description = "Delete total amount risk score" },
+                new Permission { Id = Guid.Parse("12000000-0000-0000-0000-000000000007"), Group = "Policies", Key = "VIEW_POLICIES", Description = "View permissions" },
                 
                 // ------------------ Delegation ------------------
                 new Permission { Id = Guid.Parse("13000000-0000-0000-0000-000000000001"), Group = "Delegation", Key = "MANAGE_DELEGATION", Description = "Manage all user delegations" },

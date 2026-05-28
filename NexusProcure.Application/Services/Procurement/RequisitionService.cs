@@ -192,7 +192,7 @@ public class RequisitionService : IRequisitionService
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
-committed = true;
+            committed = true;
             BackgroundJob.Enqueue<IEmailJobService>(
                 job => job.SendApprovalNotificationAsync(requisition.Id));
 
